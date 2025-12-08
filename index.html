@@ -26,7 +26,7 @@
         .header {
             background: linear-gradient(135deg, #a0ba32 0%, #8ca329 100%);
             color: white;
-            padding: 12px 24px;
+            padding: 10px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -39,12 +39,38 @@
         .header-left {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
+        }
+        
+        .header-logo {
+            height: 36px;
+            margin-right: 5px;
         }
         
         .header h1 {
             font-size: 1.1em;
             font-weight: 600;
+        }
+        
+        .header-links {
+            display: flex;
+            gap: 8px;
+            margin-left: 15px;
+        }
+        
+        .header-link {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .header-link:hover {
+            background: rgba(255,255,255,0.3);
         }
         
         .product-info {
@@ -588,6 +614,102 @@
             to { transform: translateX(0); opacity: 1; }
         }
         
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            max-width: 700px;
+            max-height: 80vh;
+            width: 90%;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #a0ba32 0%, #8ca329 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .modal-content {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: calc(80vh - 60px);
+            line-height: 1.6;
+        }
+        
+        .modal-content h3 {
+            color: #a0ba32;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .modal-content h3:first-child {
+            margin-top: 0;
+        }
+        
+        .modal-content ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .modal-content li {
+            margin-bottom: 6px;
+        }
+        
+        .modal-content code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        .modal-content .ampel-box {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .modal-content .ampel-box.gruen { background: #dcfce7; border-left: 4px solid #22c55e; }
+        .modal-content .ampel-box.gelb { background: #fef9c3; border-left: 4px solid #eab308; }
+        .modal-content .ampel-box.rot { background: #fee2e2; border-left: 4px solid #ef4444; }
+        
         /* ============================================
            ENERGIAVITAL PRODUKTSEITEN CSS
            ============================================ */
@@ -809,7 +931,14 @@
     <div id="mainApp" style="display: none;">
         <header class="header">
             <div class="header-left">
-                <h1>🔍 Produkttext Review</h1>
+                <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" class="header-logo">
+                <h1>Produkttext Review</h1>
+                <div class="header-links">
+                    <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" class="header-link">📊 Airtable</a>
+                    <span class="header-link" onclick="showHelp()">❓ Hilfe</span>
+                    <span class="header-link" onclick="showCriteria()">📋 Prüfkriterien</span>
+                </div>
+            </div>
                 <div class="product-info">
                     <span class="product-name" id="productName">-</span>
                     <span class="product-sku" id="productSku">-</span>
@@ -1345,10 +1474,16 @@
         function showAllDone() {
             document.getElementById('mainApp').innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);color:#fff;text-align:center;padding:40px;">
+                    <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" style="height:50px;margin-bottom:30px;opacity:0.8;">
                     <p style="font-size:1.3em;color:#888;margin-bottom:30px;">Keine Produkte zur Prüfung vorhanden.</p>
-                    <button onclick="window.location.reload()" style="background:#a0ba32;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
+                    <button onclick="window.location.reload()" style="background:#a0ba32;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;margin-bottom:30px;">
                         🔄 Auf neue Produkte prüfen
                     </button>
+                    <div style="display:flex;gap:15px;margin-top:20px;">
+                        <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" style="color:#a0ba32;text-decoration:none;">📊 Airtable öffnen</a>
+                        <span style="color:#a0ba32;cursor:pointer;" onclick="showHelp()">❓ Hilfe</span>
+                        <span style="color:#a0ba32;cursor:pointer;" onclick="showCriteria()">📋 Prüfkriterien</span>
+                    </div>
                 </div>
             `;
             document.getElementById('mainApp').style.display = 'block';
@@ -1364,6 +1499,126 @@
             document.body.appendChild(toast);
             
             setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // ============================================
+        // MODALS
+        // ============================================
+        
+        function showHelp() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>❓ Bedienungsanleitung</h2>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+                    </div>
+                    <div class="modal-content">
+                        <h3>Überblick</h3>
+                        <p>Das Review-Tool zeigt AI-generierte Produkttexte zur Prüfung an. Sie sehen drei Spalten:</p>
+                        <ul>
+                            <li><strong>Alter Text</strong> – Der aktuelle Text in Shopware</li>
+                            <li><strong>Neuer Text</strong> – Der AI-generierte Vorschlag (Live-Preview)</li>
+                            <li><strong>Compliance-Protokoll</strong> – Automatische Prüfergebnisse</li>
+                        </ul>
+                        
+                        <h3>Ampel-System</h3>
+                        <div class="ampel-box gruen"><strong>🟢 GRÜN</strong> – Keine Probleme erkannt, zur Freigabe empfohlen</div>
+                        <div class="ampel-box gelb"><strong>🟡 GELB</strong> – Kleine Hinweise (z.B. SEO), aber compliant</div>
+                        <div class="ampel-box rot"><strong>🔴 ROT</strong> – Compliance-Problem erkannt, bitte genau prüfen</div>
+                        
+                        <h3>Aktionen</h3>
+                        <ul>
+                            <li><strong>✓ Freigeben</strong> – Text wird für Shopware-Deployment freigegeben</li>
+                            <li><strong>↻ Überarbeiten</strong> – Text braucht Änderungen (Kommentar angeben!)</li>
+                        </ul>
+                        
+                        <h3>Device-Preview</h3>
+                        <p>Mit den Buttons <code>Desktop</code> / <code>Tablet</code> / <code>Mobile</code> können Sie die Darstellung auf verschiedenen Geräten simulieren.</p>
+                        
+                        <h3>Navigation</h3>
+                        <ul>
+                            <li><strong>← Zurück / Weiter →</strong> – Zwischen Produkten wechseln</li>
+                            <li><strong>X von Y</strong> – Zeigt Position in der Warteschlange</li>
+                        </ul>
+                        
+                        <h3>Bei Problemen</h3>
+                        <p>Falls etwas nicht funktioniert, öffnen Sie die <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" style="color:#a0ba32;">Airtable-Tabelle</a> direkt und prüfen/bearbeiten Sie den Datensatz dort.</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function showCriteria() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>📋 Prüfkriterien der Validation-AI</h2>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+                    </div>
+                    <div class="modal-content">
+                        <h3>1. Compliance-Prüfung (wichtigster Teil)</h3>
+                        
+                        <p><strong>✅ ERLAUBT:</strong></p>
+                        <ul>
+                            <li>EFSA-zugelassene Health Claims (exakter oder angepasster Wortlaut)</li>
+                            <li>Emotionale Sprache: "Ihr Begleiter für mehr Energie"</li>
+                            <li>Zielgruppen: "Perfekt für aktive Menschen"</li>
+                            <li>Superlative: "hochdosiert", "premium", "umfassend"</li>
+                            <li>Traditionelle Hinweise: "seit Jahrhunderten geschätzt"</li>
+                            <li>Sachliche Angaben: "vegan", "Made in Germany", "500 mg"</li>
+                        </ul>
+                        
+                        <p><strong>❌ VERBOTEN (führt zu 🔴 ROT):</strong></p>
+                        <ul>
+                            <li>Krankheitsnamen: "bei Arthrose", "gegen Diabetes", "hilft bei Depression"</li>
+                            <li>Heilversprechen: "heilt", "behandelt", "lindert [Krankheit]"</li>
+                            <li>Medikamenten-Vergleiche: "wirkt wie Aspirin"</li>
+                            <li>Nicht-zugelassene Health Claims</li>
+                        </ul>
+                        
+                        <h3>2. SEO-Prüfung</h3>
+                        <ul>
+                            <li><strong>Meta-Title:</strong> max. 60 Zeichen</li>
+                            <li><strong>Meta-Description:</strong> max. 155 Zeichen</li>
+                            <li><strong>Keywords:</strong> 5-8 Stück empfohlen</li>
+                            <li><strong>Short-Description:</strong> max. 160 Zeichen</li>
+                        </ul>
+                        <p>SEO-Verstöße führen nur zu 🟡 GELB, nicht zu ROT.</p>
+                        
+                        <h3>3. Template-Prüfung</h3>
+                        <p>Geprüft wird, ob alle Elemente vorhanden sind:</p>
+                        <ul>
+                            <li>H2-Teaser, 3 Badges</li>
+                            <li>Produktbeschreibung (emotional)</li>
+                            <li>Wirkung-Box (falls Claims vorhanden)</li>
+                            <li>Ideal-für-Box, Qualitäts-Box</li>
+                            <li>Das-ist-drin-Box mit Tabelle</li>
+                            <li>Einnahme-Box, Accordion</li>
+                        </ul>
+                        
+                        <h3>4. Häufige Einwände (FAQ)</h3>
+                        <p>Die AI generiert produktspezifische Antworten auf typische Fragen, z.B.:</p>
+                        <ul>
+                            <li>"Warum steht da 'trägt bei' statt direktere Formulierungen?"</li>
+                            <li>"Ist 'hochdosiert' rechtlich problematisch?"</li>
+                            <li>"Warum gibt es keine EFSA-Claims für [Stoff]?"</li>
+                        </ul>
+                        
+                        <h3>Entscheidungshilfe</h3>
+                        <div class="ampel-box gruen"><strong>🟢 GRÜN</strong> → In der Regel freigeben</div>
+                        <div class="ampel-box gelb"><strong>🟡 GELB</strong> → Kurz prüfen, meist freigeben</div>
+                        <div class="ampel-box rot"><strong>🔴 ROT</strong> → Genau hinschauen, Compliance-Protokoll lesen</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
         }
         
         // ============================================
