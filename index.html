@@ -150,19 +150,73 @@
             padding: 16px;
         }
         
-        /* Old Text Panel */
+        /* Old Text Panel - auch mit energiavital CSS */
         .old-text-content {
             font-size: 13px;
             line-height: 1.6;
-            color: #666;
-            white-space: pre-wrap;
-            font-family: inherit;
+            color: #333;
         }
         
         .old-text-content:empty::before {
             content: "Kein alter Text vorhanden";
             color: #999;
             font-style: italic;
+        }
+        
+        /* energiavital CSS auch für alten Text */
+        .old-text-content {
+            --ev-primary: #a0ba32;
+            --ev-primary-light: #cde07a;
+            --ev-bg-warm: #f2ebe3;
+            --ev-bg-light: #f9f6f1;
+            --ev-bg-white: #ffffff;
+            --ev-text: #333333;
+            --ev-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
+            --ev-radius-box: 10px;
+            --ev-radius-button: 12px;
+        }
+        
+        .old-text-content .info-box,
+        .old-text-content .ideal-box,
+        .old-text-content .quality-box,
+        .old-text-content .dosage-box,
+        .old-text-content .ingredients-box {
+            padding: 12px;
+            border-radius: var(--ev-radius-box);
+            margin: 15px 0;
+            box-shadow: var(--ev-shadow);
+        }
+        
+        .old-text-content .info-box { background-color: var(--ev-bg-warm); }
+        .old-text-content .ideal-box,
+        .old-text-content .quality-box,
+        .old-text-content .dosage-box { background-color: var(--ev-bg-light); }
+        
+        .old-text-content .badge {
+            background-color: var(--ev-primary-light);
+            padding: 5px 10px;
+            margin: 3px;
+            border-radius: var(--ev-radius-button);
+            display: inline-block;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        
+        .old-text-content table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin: 10px 0;
+        }
+        
+        .old-text-content th, .old-text-content td {
+            padding: 6px 8px;
+            border: 1px solid #e0e0e0;
+            text-align: left;
+        }
+        
+        .old-text-content th {
+            background: var(--ev-bg-light);
         }
         
         /* Preview Panel */
@@ -986,9 +1040,9 @@
             ampelBadge.textContent = ampel;
             ampelBadge.className = 'ampel ' + ampel;
             
-            // Old Text
+            // Old Text - als HTML rendern
             const oldText = fields['Alter Text'] || '';
-            document.getElementById('oldTextContent').textContent = oldText;
+            document.getElementById('oldTextContent').innerHTML = oldText || '<p style="color:#999;font-style:italic;">Kein alter Text vorhanden</p>';
             document.getElementById('oldTextLength').textContent = oldText.length + ' Zeichen';
             
             // New Text Preview
@@ -1008,18 +1062,25 @@
         
         function renderProtocol(fields) {
             const container = document.getElementById('protocolContent');
-            const protokoll = fields['Compliance-Protokoll'] || '';
+            let protokoll = fields['Compliance-Protokoll'] || '';
             const ampel = fields['Ampel'] || 'GRÜN';
             
-            // Try to parse as JSON
+            // Try to parse as JSON (might be double-stringified from n8n)
             let protocolData = null;
             try {
+                // First attempt
                 protocolData = JSON.parse(protokoll);
+                
+                // If it's still a string, parse again (double-encoded)
+                if (typeof protocolData === 'string') {
+                    protocolData = JSON.parse(protocolData);
+                }
             } catch (e) {
                 // Not JSON, display as text
+                console.log('Protocol parse error:', e);
             }
             
-            if (protocolData) {
+            if (protocolData && typeof protocolData === 'object') {
                 container.innerHTML = renderProtocolJSON(protocolData, fields);
             } else if (protokoll) {
                 container.innerHTML = `<div class="protocol-item">${protokoll.replace(/\n/g, '<br>')}</div>`;
