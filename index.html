@@ -116,8 +116,15 @@
             display: grid;
             grid-template-columns: 1fr 1.5fr 1fr;
             gap: 0;
-            height: calc(100vh - 56px - 70px);
-            padding-bottom: 70px; /* Platz für fixierte Action Bar */
+            height: calc(100vh - 56px);
+            overflow: hidden;
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 90px; /* Platz für fixierte Action Bar */
         }
         
         .panel {
@@ -145,11 +152,6 @@
             align-items: center;
         }
         
-        .panel-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-        }
         
         /* Old Text Panel - auch mit energiavital CSS */
         .old-text-content {
