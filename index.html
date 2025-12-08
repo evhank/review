@@ -285,7 +285,6 @@
         }
         
         .preview-frame.desktop { max-width: 100%; }
-        .preview-frame.tablet { max-width: 768px; }
         .preview-frame.mobile { max-width: 375px; }
         
         .preview-content {
@@ -391,6 +390,42 @@
         
         .seo-item .value.ok { color: #22c55e; }
         .seo-item .value.warning { color: #eab308; }
+        
+        /* Meta-Felder Anzeige */
+        .meta-field {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .meta-field:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .meta-label {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 4px;
+        }
+        
+        .meta-value {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #333;
+            word-break: break-word;
+        }
+        
+        .meta-value.keywords {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            background: #f5f5f5;
+            padding: 6px 8px;
+            border-radius: 4px;
+        }
         
         /* Action Bar - fixiert am unteren Rand */
         .action-bar {
@@ -971,7 +1006,6 @@
                     <span>Neuer Text (Live-Preview)</span>
                     <div class="device-toggle">
                         <button class="active" onclick="setDevice('desktop', this)">Desktop</button>
-                        <button onclick="setDevice('tablet', this)">Tablet</button>
                         <button onclick="setDevice('mobile', this)">Mobile</button>
                     </div>
                 </div>
@@ -1301,6 +1335,44 @@
                 `;
             }
             
+            // Meta-Inhalte (Texte zum Abgleich)
+            const metaTitle = fields['Meta-Title'] || '';
+            const metaDesc = fields['Meta-Description'] || '';
+            const keywords = fields['Keywords'] || '';
+            const shortDesc = fields['Short-Description'] || '';
+            
+            if (metaTitle || metaDesc || keywords || shortDesc) {
+                html += `
+                    <div class="protocol-section">
+                        <div class="protocol-section-title">Meta-Inhalte</div>
+                        ${metaTitle ? `
+                            <div class="meta-field">
+                                <div class="meta-label">Meta-Title:</div>
+                                <div class="meta-value">${metaTitle}</div>
+                            </div>
+                        ` : ''}
+                        ${metaDesc ? `
+                            <div class="meta-field">
+                                <div class="meta-label">Meta-Description:</div>
+                                <div class="meta-value">${metaDesc}</div>
+                            </div>
+                        ` : ''}
+                        ${keywords ? `
+                            <div class="meta-field">
+                                <div class="meta-label">Keywords:</div>
+                                <div class="meta-value keywords">${keywords}</div>
+                            </div>
+                        ` : ''}
+                        ${shortDesc ? `
+                            <div class="meta-field">
+                                <div class="meta-label">Short-Description:</div>
+                                <div class="meta-value">${shortDesc}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
             // FAQs
             if (data.faq && data.faq.length > 0) {
                 html += `
@@ -1366,6 +1438,20 @@
                 <div class="protocol-section">
                     <div class="protocol-section-title">Meta-Description</div>
                     <div class="protocol-item">${metaDesc}</div>
+                </div>
+                ` : ''}
+                
+                ${keywords ? `
+                <div class="protocol-section">
+                    <div class="protocol-section-title">Keywords</div>
+                    <div class="protocol-item" style="font-family:monospace;font-size:12px;">${keywords}</div>
+                </div>
+                ` : ''}
+                
+                ${shortDesc ? `
+                <div class="protocol-section">
+                    <div class="protocol-section-title">Short-Description</div>
+                    <div class="protocol-item">${shortDesc}</div>
                 </div>
                 ` : ''}
             `;
