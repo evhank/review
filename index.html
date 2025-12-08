@@ -788,11 +788,14 @@
     <div id="setupScreen" class="setup-screen" style="display: none;">
         <div class="setup-card">
             <h1>🔐 Setup</h1>
-            <p>Bitte Airtable Personal Access Token eingeben, um fortzufahren.</p>
-            <label for="tokenInput">Personal Access Token</label>
+            <p>Bitte Zugangsdaten eingeben, um fortzufahren.</p>
+            <label for="nameInput">Dein Name</label>
+            <input type="text" id="nameInput" placeholder="z.B. Carsten">
+            <p class="hint">Wird bei Freigaben als "Geprüft von" gespeichert.</p>
+            <label for="tokenInput">Airtable Personal Access Token</label>
             <input type="password" id="tokenInput" placeholder="pat...">
             <p class="hint">Token wird lokal im Browser gespeichert.</p>
-            <button onclick="saveToken()">Verbinden</button>
+            <button onclick="saveSetup()">Verbinden</button>
         </div>
     </div>
     
@@ -874,12 +877,9 @@
             </div>
             <div class="comment-section">
                 <input type="text" id="commentInput" placeholder="Kommentar (optional)...">
-                <select class="reviewer-select" id="reviewerSelect">
-                    <option value="">Prüfer wählen...</option>
-                    <option value="Carsten">Carsten</option>
-                    <option value="Mitarbeiter 1">Mitarbeiter 1</option>
-                    <option value="Mitarbeiter 2">Mitarbeiter 2</option>
-                </select>
+                <div class="reviewer-display" id="reviewerDisplay" style="padding:10px 14px;background:#f5f5f5;border-radius:6px;font-size:14px;color:#666;">
+                    Prüfer: <strong id="reviewerNameDisplay">-</strong>
+                </div>
             </div>
         </div>
     </div>
@@ -916,6 +916,7 @@
         // ============================================
         
         let token = localStorage.getItem('airtable_token');
+        let reviewerName = localStorage.getItem('reviewer_name');
         let currentRecord = null;
         let recordQueue = [];
         let currentQueueIndex = 0;
@@ -925,8 +926,10 @@
         // ============================================
         
         async function init() {
-            if (!token) {
+            if (!token || !reviewerName) {
                 document.getElementById('setupScreen').style.display = 'flex';
+                // Falls einer der Werte existiert, vorausfüllen
+                if (reviewerName) document.getElementById('nameInput').value = reviewerName;
                 return;
             }
             
@@ -942,14 +945,25 @@
             }
         }
         
-        function saveToken() {
+        function saveSetup() {
+            const inputName = document.getElementById('nameInput').value.trim();
             const inputToken = document.getElementById('tokenInput').value.trim();
-            if (inputToken) {
-                localStorage.setItem('airtable_token', inputToken);
-                token = inputToken;
-                document.getElementById('setupScreen').style.display = 'none';
-                init();
+            
+            if (!inputName) {
+                alert('Bitte Namen eingeben!');
+                return;
             }
+            if (!inputToken) {
+                alert('Bitte Token eingeben!');
+                return;
+            }
+            
+            localStorage.setItem('reviewer_name', inputName);
+            localStorage.setItem('airtable_token', inputToken);
+            reviewerName = inputName;
+            token = inputToken;
+            document.getElementById('setupScreen').style.display = 'none';
+            init();
         }
         
         // ============================================
@@ -1059,9 +1073,8 @@
             // Load existing comment
             document.getElementById('commentInput').value = fields['Prüfer-Kommentar'] || '';
             
-            // Set reviewer if exists
-            const reviewer = fields['Geprüft von'] || '';
-            document.getElementById('reviewerSelect').value = reviewer;
+            // Show reviewer name
+            document.getElementById('reviewerNameDisplay').textContent = reviewerName || '-';
         }
         
         function renderProtocol(fields) {
@@ -1236,10 +1249,9 @@
             if (!currentRecord) return;
             
             const comment = document.getElementById('commentInput').value.trim();
-            const reviewer = document.getElementById('reviewerSelect').value;
             
-            if (!reviewer) {
-                showToast('Bitte Prüfer auswählen!', 'error');
+            if (!reviewerName) {
+                showToast('Kein Prüfer-Name gespeichert!', 'error');
                 return;
             }
             
@@ -1250,7 +1262,7 @@
                 await updateRecord(currentRecord.id, {
                     'Status': status,
                     'Prüfer-Kommentar': comment,
-                    'Geprüft von': reviewer
+                    'Geprüft von': reviewerName
                 });
                 
                 showToast(`Status auf "${status}" gesetzt!`, 'success');
