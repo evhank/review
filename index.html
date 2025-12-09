@@ -1243,52 +1243,81 @@
         async function displayRecord(record) {
             currentRecord = record;
             const fields = record.fields;
-            
-            document.getElementById('mainApp').style.display = 'block';
-            
-            // Header
-            document.getElementById('productName').textContent = fields['Produkt'] || '-';
-            document.getElementById('productSku').textContent = fields['Produktnummer'] || '-';
-            
+
+            const mainApp = document.getElementById('mainApp');
+            const productName = document.getElementById('productName');
+            const productSku = document.getElementById('productSku');
             const ampelBadge = document.getElementById('ampelBadge');
+
+            // Null-check to prevent errors if elements don't exist
+            if (!mainApp || !productName || !productSku || !ampelBadge) {
+                console.error('Required DOM elements not found');
+                return;
+            }
+
+            mainApp.style.display = 'block';
+
+            // Header
+            productName.textContent = fields['Produkt'] || '-';
+            productSku.textContent = fields['Produktnummer'] || '-';
+
             const ampel = fields['Ampel'] || 'GRÜN';
             ampelBadge.textContent = ampel;
             ampelBadge.className = 'ampel ' + ampel;
             
+            // Get remaining elements with null-checks
+            const oldTextContent = document.getElementById('oldTextContent');
+            const oldTextLength = document.getElementById('oldTextLength');
+            const previewContent = document.getElementById('previewContent');
+            const commentInput = document.getElementById('commentInput');
+            const reviewerNameDisplay = document.getElementById('reviewerNameDisplay');
+
             // Old Text - als HTML rendern (sanitized)
             const oldText = fields['Alter Text'] || '';
-            document.getElementById('oldTextContent').innerHTML = oldText
-                ? DOMPurify.sanitize(oldText)
-                : '<p style="color:#999;font-style:italic;">Kein alter Text vorhanden</p>';
-            document.getElementById('oldTextLength').textContent = oldText.length + ' Zeichen';
+            if (oldTextContent) {
+                oldTextContent.innerHTML = oldText
+                    ? DOMPurify.sanitize(oldText)
+                    : '<p style="color:#999;font-style:italic;">Kein alter Text vorhanden</p>';
+            }
+            if (oldTextLength) {
+                oldTextLength.textContent = oldText.length + ' Zeichen';
+            }
 
             // New Text Preview (sanitized)
             const newText = fields['Neuer Text'] || '';
-            document.getElementById('previewContent').innerHTML = newText
-                ? DOMPurify.sanitize(newText)
-                : '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
-            
+            if (previewContent) {
+                previewContent.innerHTML = newText
+                    ? DOMPurify.sanitize(newText)
+                    : '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
+            }
+
             // Compliance Protocol
             renderProtocol(fields);
-            
+
             // Load existing comment
-            document.getElementById('commentInput').value = fields['Prüfer-Kommentar'] || '';
-            
+            if (commentInput) {
+                commentInput.value = fields['Prüfer-Kommentar'] || '';
+            }
+
             // Show reviewer name
-            document.getElementById('reviewerNameDisplay').textContent = reviewerName || '-';
+            if (reviewerNameDisplay) {
+                reviewerNameDisplay.textContent = reviewerName || '-';
+            }
         }
         
         function renderProtocol(fields) {
             const container = document.getElementById('protocolContent');
+            if (!container) return;
+
             let protokoll = fields['Compliance-Protokoll'] || '';
             const ampel = fields['Ampel'] || 'GRÜN';
-            
+
             // Try to parse as JSON (might be double-stringified from n8n)
             let protocolData = null;
             try {
                 // First attempt
                 protocolData = JSON.parse(protokoll);
-                
+
                 // If it's still a string, parse again (double-encoded)
                 if (typeof protocolData === 'string') {
                     protocolData = JSON.parse(protocolData);
@@ -1297,7 +1326,7 @@
                 // Not JSON, display as text
                 console.log('Protocol parse error:', e);
             }
-            
+
             if (protocolData && typeof protocolData === 'object') {
                 container.innerHTML = DOMPurify.sanitize(renderProtocolJSON(protocolData, fields));
             } else if (protokoll) {
@@ -1546,10 +1575,18 @@
         // ============================================
         
         function updateQueueNavigation() {
-            document.getElementById('currentIndex').textContent = currentQueueIndex + 1;
-            document.getElementById('totalCount').textContent = recordQueue.length;
-            document.getElementById('prevBtn').disabled = currentQueueIndex === 0;
-            document.getElementById('nextBtn').disabled = currentQueueIndex >= recordQueue.length - 1;
+            const currentIndexEl = document.getElementById('currentIndex');
+            const totalCountEl = document.getElementById('totalCount');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            // Null-check to prevent errors if elements don't exist (e.g., after showError)
+            if (!currentIndexEl || !totalCountEl || !prevBtn || !nextBtn) return;
+
+            currentIndexEl.textContent = currentQueueIndex + 1;
+            totalCountEl.textContent = recordQueue.length;
+            prevBtn.disabled = currentQueueIndex === 0;
+            nextBtn.disabled = currentQueueIndex >= recordQueue.length - 1;
         }
         
         async function navigatePrev() {
