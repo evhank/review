@@ -1090,9 +1090,37 @@
         // ============================================
         // STATE
         // ============================================
-        
-        let token = localStorage.getItem('airtable_token');
-        let reviewerName = localStorage.getItem('reviewer_name');
+
+        // Safe localStorage access
+        function getStoredValue(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (e) {
+                console.warn('localStorage not available:', e);
+                return null;
+            }
+        }
+
+        function setStoredValue(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch (e) {
+                console.warn('localStorage not available:', e);
+                return false;
+            }
+        }
+
+        function removeStoredValue(key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.warn('localStorage not available:', e);
+            }
+        }
+
+        let token = getStoredValue('airtable_token');
+        let reviewerName = getStoredValue('reviewer_name');
         let currentRecord = null;
         let recordQueue = [];
         let currentQueueIndex = 0;
@@ -1127,6 +1155,27 @@
             return div.innerHTML;
         }
 
+        // Fallback sanitizer for when DOMPurify is not available (e.g., blocked by Safari)
+        function sanitizeHtml(html) {
+            if (typeof DOMPurify !== 'undefined') {
+                return DOMPurify.sanitize(html);
+            }
+            // Fallback: use a basic sanitizer that strips dangerous tags
+            console.warn('DOMPurify not available, using fallback sanitizer');
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            // Remove script tags and event handlers
+            temp.querySelectorAll('script, iframe, object, embed, form').forEach(el => el.remove());
+            temp.querySelectorAll('*').forEach(el => {
+                [...el.attributes].forEach(attr => {
+                    if (attr.name.startsWith('on') || attr.value.includes('javascript:')) {
+                        el.removeAttribute(attr.name);
+                    }
+                });
+            });
+            return temp.innerHTML;
+        }
+
         function validateToken(token) {
             // Airtable Personal Access Tokens start with 'pat' followed by alphanumeric chars and dots
             const tokenPattern = /^pat[a-zA-Z0-9._]{20,}$/;
@@ -1155,8 +1204,8 @@
                 return;
             }
 
-            localStorage.setItem('reviewer_name', inputName);
-            localStorage.setItem('airtable_token', inputToken);
+            setStoredValue('reviewer_name', inputName);
+            setStoredValue('airtable_token', inputToken);
             reviewerName = inputName;
             token = inputToken;
             document.getElementById('setupScreen').style.display = 'none';
@@ -1276,7 +1325,7 @@
             const oldText = fields['Alter Text'] || '';
             if (oldTextContent) {
                 oldTextContent.innerHTML = oldText
-                    ? DOMPurify.sanitize(oldText)
+                    ? sanitizeHtml(oldText)
                     : '<p style="color:#999;font-style:italic;">Kein alter Text vorhanden</p>';
             }
             if (oldTextLength) {
@@ -1287,7 +1336,7 @@
             const newText = fields['Neuer Text'] || '';
             if (previewContent) {
                 previewContent.innerHTML = newText
-                    ? DOMPurify.sanitize(newText)
+                    ? sanitizeHtml(newText)
                     : '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
             }
 
@@ -1328,12 +1377,12 @@
             }
 
             if (protocolData && typeof protocolData === 'object') {
-                container.innerHTML = DOMPurify.sanitize(renderProtocolJSON(protocolData, fields));
+                container.innerHTML = sanitizeHtml(renderProtocolJSON(protocolData, fields));
             } else if (protokoll) {
-                container.innerHTML = DOMPurify.sanitize(`<div class="protocol-item">${escapeHtml(protokoll).replace(/\n/g, '<br>')}</div>`);
+                container.innerHTML = sanitizeHtml(`<div class="protocol-item">${escapeHtml(protokoll).replace(/\n/g, '<br>')}</div>`);
             } else {
                 // Generate basic protocol from available data
-                container.innerHTML = DOMPurify.sanitize(renderBasicProtocol(fields, ampel));
+                container.innerHTML = sanitizeHtml(renderBasicProtocol(fields, ampel));
             }
         }
         
@@ -1611,8 +1660,8 @@
 
         function logout() {
             if (confirm('Möchten Sie sich wirklich abmelden? Ihre Zugangsdaten werden gelöscht.')) {
-                localStorage.removeItem('airtable_token');
-                localStorage.removeItem('reviewer_name');
+                removeStoredValue('airtable_token');
+                removeStoredValue('reviewer_name');
                 token = null;
                 reviewerName = null;
                 document.getElementById('mainApp').style.display = 'none';
