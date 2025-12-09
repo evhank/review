@@ -134,7 +134,16 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
+
+        .nav-btn.logout-btn {
+            background: rgba(239, 68, 68, 0.3);
+            margin-left: 10px;
+        }
+
+        .nav-btn.logout-btn:hover {
+            background: rgba(239, 68, 68, 0.5);
+        }
+
         .queue-info {
             font-size: 0.85em;
             opacity: 0.9;
@@ -987,6 +996,7 @@
                 <span class="queue-info"><span id="currentIndex">-</span> von <span id="totalCount">-</span></span>
                 <button class="nav-btn" onclick="navigatePrev()" id="prevBtn">← Zurück</button>
                 <button class="nav-btn" onclick="navigateNext()" id="nextBtn">Weiter →</button>
+                <button class="nav-btn logout-btn" onclick="logout()" title="Abmelden">🚪 Logout</button>
             </div>
         </header>
         
@@ -1561,7 +1571,20 @@
         // ============================================
         // UI HELPERS
         // ============================================
-        
+
+        function logout() {
+            if (confirm('Möchten Sie sich wirklich abmelden? Ihre Zugangsdaten werden gelöscht.')) {
+                localStorage.removeItem('airtable_token');
+                localStorage.removeItem('reviewer_name');
+                token = null;
+                reviewerName = null;
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('setupScreen').style.display = 'flex';
+                document.getElementById('nameInput').value = '';
+                document.getElementById('tokenInput').value = '';
+            }
+        }
+
         function setDevice(device, btn) {
             document.getElementById('previewFrame').className = 'preview-frame ' + device;
             document.querySelectorAll('.device-toggle button').forEach(b => b.classList.remove('active'));
