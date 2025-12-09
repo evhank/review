@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://energiavital.de data:; connect-src https://api.airtable.com; frame-ancestors 'none';">
     <title>energiavital - Produkttext Review</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-H+rglffZ6f5gMOzw+KURKV4CmY2bXzWHeK1WfZp/AjLFbPLoL5odo5vmC7SFxVUspEeWaHnqk3g0rwL27B7zYA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         /* ============================================
            REVIEW INTERFACE - MAIN STYLES
@@ -1109,10 +1111,27 @@
             }
         }
         
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function validateToken(token) {
+            // Airtable Personal Access Tokens start with 'pat' followed by alphanumeric chars and dots
+            const tokenPattern = /^pat[a-zA-Z0-9._]{20,}$/;
+            return tokenPattern.test(token);
+        }
+
+        function sanitizeName(name) {
+            // Allow only safe characters for reviewer name
+            return name.replace(/[<>\"'&]/g, '').substring(0, 50);
+        }
+
         function saveSetup() {
-            const inputName = document.getElementById('nameInput').value.trim();
+            const inputName = sanitizeName(document.getElementById('nameInput').value.trim());
             const inputToken = document.getElementById('tokenInput').value.trim();
-            
+
             if (!inputName) {
                 alert('Bitte Namen eingeben!');
                 return;
@@ -1121,7 +1140,11 @@
                 alert('Bitte Token eingeben!');
                 return;
             }
-            
+            if (!validateToken(inputToken)) {
+                alert('Ungültiges Token-Format! Airtable Personal Access Tokens beginnen mit "pat".');
+                return;
+            }
+
             localStorage.setItem('reviewer_name', inputName);
             localStorage.setItem('airtable_token', inputToken);
             reviewerName = inputName;
@@ -1222,14 +1245,18 @@
             ampelBadge.textContent = ampel;
             ampelBadge.className = 'ampel ' + ampel;
             
-            // Old Text - als HTML rendern
+            // Old Text - als HTML rendern (sanitized)
             const oldText = fields['Alter Text'] || '';
-            document.getElementById('oldTextContent').innerHTML = oldText || '<p style="color:#999;font-style:italic;">Kein alter Text vorhanden</p>';
+            document.getElementById('oldTextContent').innerHTML = oldText
+                ? DOMPurify.sanitize(oldText)
+                : '<p style="color:#999;font-style:italic;">Kein alter Text vorhanden</p>';
             document.getElementById('oldTextLength').textContent = oldText.length + ' Zeichen';
-            
-            // New Text Preview
+
+            // New Text Preview (sanitized)
             const newText = fields['Neuer Text'] || '';
-            document.getElementById('previewContent').innerHTML = newText || '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
+            document.getElementById('previewContent').innerHTML = newText
+                ? DOMPurify.sanitize(newText)
+                : '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
             
             // Compliance Protocol
             renderProtocol(fields);
@@ -1262,12 +1289,12 @@
             }
             
             if (protocolData && typeof protocolData === 'object') {
-                container.innerHTML = renderProtocolJSON(protocolData, fields);
+                container.innerHTML = DOMPurify.sanitize(renderProtocolJSON(protocolData, fields));
             } else if (protokoll) {
-                container.innerHTML = `<div class="protocol-item">${protokoll.replace(/\n/g, '<br>')}</div>`;
+                container.innerHTML = DOMPurify.sanitize(`<div class="protocol-item">${escapeHtml(protokoll).replace(/\n/g, '<br>')}</div>`);
             } else {
                 // Generate basic protocol from available data
-                container.innerHTML = renderBasicProtocol(fields, ampel);
+                container.innerHTML = DOMPurify.sanitize(renderBasicProtocol(fields, ampel));
             }
         }
         
@@ -1282,8 +1309,8 @@
                         Zusammenfassung
                     </div>
                     <div class="protocol-item ${data.ampel === 'GRÜN' ? 'success' : data.ampel === 'GELB' ? 'warning' : 'error'}">
-                        <strong>${data.recommendation || 'Keine Empfehlung'}</strong><br>
-                        ${data.summary || ''}
+                        <strong>${escapeHtml(data.recommendation || 'Keine Empfehlung')}</strong><br>
+                        ${escapeHtml(data.summary || '')}
                     </div>
                 </div>
             `;
@@ -1300,7 +1327,7 @@
                             ${data.efsa.claimsUsed.map(c => `
                                 <div class="claim-item">
                                     <span class="claim-status">${c.valid ? '✓' : '✗'}</span>
-                                    <span><strong>${c.ingredient}:</strong> ${c.claim}</span>
+                                    <span><strong>${escapeHtml(c.ingredient || '')}:</strong> ${escapeHtml(c.claim || '')}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -1340,7 +1367,7 @@
             const metaDesc = fields['Meta-Description'] || '';
             const keywords = fields['Keywords'] || '';
             const shortDesc = fields['Short-Description'] || '';
-            
+
             if (metaTitle || metaDesc || keywords || shortDesc) {
                 html += `
                     <div class="protocol-section">
@@ -1348,25 +1375,25 @@
                         ${metaTitle ? `
                             <div class="meta-field">
                                 <div class="meta-label">Meta-Title:</div>
-                                <div class="meta-value">${metaTitle}</div>
+                                <div class="meta-value">${escapeHtml(metaTitle)}</div>
                             </div>
                         ` : ''}
                         ${metaDesc ? `
                             <div class="meta-field">
                                 <div class="meta-label">Meta-Description:</div>
-                                <div class="meta-value">${metaDesc}</div>
+                                <div class="meta-value">${escapeHtml(metaDesc)}</div>
                             </div>
                         ` : ''}
                         ${keywords ? `
                             <div class="meta-field">
                                 <div class="meta-label">Keywords:</div>
-                                <div class="meta-value keywords">${keywords}</div>
+                                <div class="meta-value keywords">${escapeHtml(keywords)}</div>
                             </div>
                         ` : ''}
                         ${shortDesc ? `
                             <div class="meta-field">
                                 <div class="meta-label">Short-Description:</div>
-                                <div class="meta-value">${shortDesc}</div>
+                                <div class="meta-value">${escapeHtml(shortDesc)}</div>
                             </div>
                         ` : ''}
                     </div>
@@ -1380,8 +1407,8 @@
                         <div class="protocol-section-title">Häufige Einwände</div>
                         ${data.faq.map(f => `
                             <div class="faq-item">
-                                <div class="faq-question">❓ ${f.question}</div>
-                                <div class="faq-answer">${f.answer}</div>
+                                <div class="faq-question">❓ ${escapeHtml(f.question || '')}</div>
+                                <div class="faq-answer">${escapeHtml(f.answer || '')}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -1430,28 +1457,28 @@
                 ${metaTitle ? `
                 <div class="protocol-section">
                     <div class="protocol-section-title">Meta-Title</div>
-                    <div class="protocol-item">${metaTitle}</div>
+                    <div class="protocol-item">${escapeHtml(metaTitle)}</div>
                 </div>
                 ` : ''}
-                
+
                 ${metaDesc ? `
                 <div class="protocol-section">
                     <div class="protocol-section-title">Meta-Description</div>
-                    <div class="protocol-item">${metaDesc}</div>
+                    <div class="protocol-item">${escapeHtml(metaDesc)}</div>
                 </div>
                 ` : ''}
-                
+
                 ${keywords ? `
                 <div class="protocol-section">
                     <div class="protocol-section-title">Keywords</div>
-                    <div class="protocol-item" style="font-family:monospace;font-size:12px;">${keywords}</div>
+                    <div class="protocol-item" style="font-family:monospace;font-size:12px;">${escapeHtml(keywords)}</div>
                 </div>
                 ` : ''}
-                
+
                 ${shortDesc ? `
                 <div class="protocol-section">
                     <div class="protocol-section-title">Short-Description</div>
-                    <div class="protocol-item">${shortDesc}</div>
+                    <div class="protocol-item">${escapeHtml(shortDesc)}</div>
                 </div>
                 ` : ''}
             `;
@@ -1549,7 +1576,7 @@
             document.getElementById('mainApp').innerHTML = `
                 <div class="error-state">
                     <h2>⚠️ Fehler</h2>
-                    <p>${message}</p>
+                    <p>${escapeHtml(message)}</p>
                     <button onclick="window.location.reload()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">
                         Neu laden
                     </button>
