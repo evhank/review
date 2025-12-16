@@ -74,6 +74,73 @@
             background: rgba(255,255,255,0.3);
         }
         
+        .header-link.active {
+            background: rgba(255,255,255,0.4);
+            font-weight: 600;
+        }
+        
+        /* Mode Tabs */
+        .mode-tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px;
+            border-radius: 8px;
+            margin-left: 20px;
+        }
+        
+        .mode-tab {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: white;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0.7;
+        }
+        
+        .mode-tab:hover {
+            opacity: 1;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .mode-tab.active {
+            background: rgba(255,255,255,0.25);
+            opacity: 1;
+            font-weight: 600;
+        }
+        
+        /* Browse Mode Indicator */
+        .browse-mode .action-bar {
+            background: #f5f5f5;
+            border-top-color: #ccc;
+        }
+        
+        .browse-mode .action-btn {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .browse-mode .comment-section input {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .browse-mode-banner {
+            display: none;
+            background: #3b82f6;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.9em;
+        }
+        
+        .browse-mode .browse-mode-banner {
+            display: block;
+        }
+        
         .product-info {
             display: flex;
             align-items: center;
@@ -969,6 +1036,10 @@
             <div class="header-left">
                 <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" class="header-logo">
                 <h1>Produkttext Review</h1>
+                <div class="mode-tabs">
+                    <button class="mode-tab active" onclick="switchMode('review')" id="reviewModeTab">✏️ Review</button>
+                    <button class="mode-tab" onclick="switchMode('browse')" id="browseModeTab">👁️ Browse</button>
+                </div>
                 <div class="header-links">
                     <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" class="header-link">📊 Airtable</a>
                     <span class="header-link" onclick="showHelp()">❓ Hilfe</span>
@@ -1029,6 +1100,11 @@
             </div>
         </div>
         
+        <!-- Browse Mode Banner -->
+        <div class="browse-mode-banner" id="browseModeBanner">
+            👁️ Browse-Modus: Nur Ansicht – keine Änderungen möglich
+        </div>
+        
         <!-- Action Bar -->
         <div class="action-bar">
             <div class="action-buttons">
@@ -1072,7 +1148,10 @@
             shortDescription: 'fldynyKRUgdDfZg5G',
             seoStatus: 'fldVNwptTisLJmfKX',
             prueferKommentar: 'fldhx3UnPtJHAI2vN',
-            geprueftVon: 'fldzcLHQwBlIjr66x'
+            geprueftVon: 'fldzcLHQwBlIjr66x',
+            originalVerstoesse: 'fldWNwLbjcwmTSXRc',
+            erstelltAm: 'fldFjqSLo0vTOFi4g',
+            geprueftAm: 'fld5N56RiQDtjnShL'
         };
         
         // ============================================
@@ -1084,6 +1163,7 @@
         let currentRecord = null;
         let recordQueue = [];
         let currentQueueIndex = 0;
+        let currentMode = 'review'; // 'review' or 'browse'
         
         // ============================================
         // INITIALIZATION
@@ -1155,9 +1235,22 @@
             showLoading(true);
             
             try {
-                // Load records with status "Zur Prüfung"
+                let filterFormula;
+                let sortField = 'Ampel';
+                let sortDirection = 'desc';
+                
+                if (currentMode === 'browse') {
+                    // Browse mode: Load approved records
+                    filterFormula = '{Status}="Freigegeben"';
+                    sortField = 'Geprüft am';
+                    sortDirection = 'desc';
+                } else {
+                    // Review mode: Load records for review
+                    filterFormula = '{Status}="Zur Prüfung"';
+                }
+                
                 const data = await airtableFetch(
-                    `${AIRTABLE_TABLE_ID}?filterByFormula={Status}="Zur Prüfung"&sort[0][field]=Ampel&sort[0][direction]=desc`
+                    `${AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(filterFormula)}&sort[0][field]=${encodeURIComponent(sortField)}&sort[0][direction]=${sortDirection}`
                 );
                 
                 recordQueue = data.records || [];
@@ -1176,6 +1269,28 @@
             } finally {
                 showLoading(false);
             }
+        }
+        
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update tab styles
+            document.getElementById('reviewModeTab').classList.toggle('active', mode === 'review');
+            document.getElementById('browseModeTab').classList.toggle('active', mode === 'browse');
+            
+            // Update body class for browse mode styling
+            document.getElementById('mainApp').classList.toggle('browse-mode', mode === 'browse');
+            
+            // Update header title
+            const title = mode === 'browse' ? 'Produkttext Browse (Freigegeben)' : 'Produkttext Review';
+            document.querySelector('.header h1').textContent = title;
+            
+            // Clear comment input
+            const commentInput = document.getElementById('commentInput');
+            if (commentInput) commentInput.value = '';
+            
+            // Reload queue with new filter
+            loadQueue();
         }
         
         async function loadRecord(recordId) {
@@ -1286,6 +1401,20 @@
         
         function renderProtocolJSON(data, fields) {
             let html = '';
+            
+            // Review Metadata (show in browse mode or when reviewed)
+            if (fields['Geprüft von'] || fields['Geprüft am']) {
+                html += `
+                    <div class="protocol-section" style="background:#e8f4ea;border-radius:8px;padding:12px;margin-bottom:15px;">
+                        <div style="display:flex;gap:20px;font-size:0.9em;">
+                            ${fields['Geprüft von'] ? `<span>👤 <strong>${fields['Geprüft von']}</strong></span>` : ''}
+                            ${fields['Geprüft am'] ? `<span>📅 ${new Date(fields['Geprüft am']).toLocaleString('de-DE')}</span>` : ''}
+                            ${fields['Status'] ? `<span>📋 ${fields['Status']}</span>` : ''}
+                        </div>
+                        ${fields['Prüfer-Kommentar'] ? `<div style="margin-top:8px;font-style:italic;color:#666;">"${fields['Prüfer-Kommentar']}"</div>` : ''}
+                    </div>
+                `;
+            }
             
             // Summary
             html += `
@@ -1477,6 +1606,12 @@
         async function setStatus(status) {
             if (!currentRecord) return;
             
+            // Prevent actions in browse mode
+            if (currentMode === 'browse') {
+                showToast('Im Browse-Modus sind keine Änderungen möglich', 'error');
+                return;
+            }
+            
             const comment = document.getElementById('commentInput').value.trim();
             
             if (!reviewerName) {
@@ -1488,11 +1623,14 @@
             buttons.forEach(btn => btn.disabled = true);
             
             try {
-                await updateRecord(currentRecord.id, {
+                const updateFields = {
                     'Status': status,
                     'Prüfer-Kommentar': comment,
-                    'Geprüft von': reviewerName
-                });
+                    'Geprüft von': reviewerName,
+                    'Geprüft am': new Date().toISOString()
+                };
+                
+                await updateRecord(currentRecord.id, updateFields);
                 
                 showToast(`Status auf "${status}" gesetzt!`, 'success');
                 
@@ -1572,13 +1710,24 @@
         }
         
         function showAllDone() {
+            const isReviewMode = currentMode === 'review';
+            const title = isReviewMode ? 'Keine Produkte zur Prüfung vorhanden.' : 'Keine freigegebenen Produkte gefunden.';
+            const buttonText = isReviewMode ? '🔄 Auf neue Produkte prüfen' : '🔄 Aktualisieren';
+            const switchModeText = isReviewMode ? '👁️ Freigegebene ansehen' : '✏️ Zur Prüfung';
+            const switchModeTarget = isReviewMode ? 'browse' : 'review';
+            
             document.getElementById('mainApp').innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);color:#fff;text-align:center;padding:40px;">
                     <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" style="height:50px;margin-bottom:30px;opacity:0.8;">
-                    <p style="font-size:1.3em;color:#888;margin-bottom:30px;">Keine Produkte zur Prüfung vorhanden.</p>
-                    <button onclick="window.location.reload()" style="background:#a0ba32;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;margin-bottom:30px;">
-                        🔄 Auf neue Produkte prüfen
-                    </button>
+                    <p style="font-size:1.3em;color:#888;margin-bottom:30px;">${title}</p>
+                    <div style="display:flex;gap:15px;margin-bottom:30px;">
+                        <button onclick="window.location.reload()" style="background:#a0ba32;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
+                            ${buttonText}
+                        </button>
+                        <button onclick="switchMode('${switchModeTarget}')" style="background:#3b82f6;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
+                            ${switchModeText}
+                        </button>
+                    </div>
                     <div style="display:flex;gap:15px;margin-top:20px;">
                         <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" style="color:#a0ba32;text-decoration:none;">📊 Airtable öffnen</a>
                         <span style="color:#a0ba32;cursor:pointer;" onclick="showHelp()">❓ Hilfe</span>
