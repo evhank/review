@@ -1050,6 +1050,7 @@
                     <span class="product-name" id="productName">-</span>
                     <span class="product-sku" id="productSku">-</span>
                     <span class="ampel" id="ampelBadge">-</span>
+                    <span class="status-badge" id="statusBadge" style="display:none;padding:4px 10px;border-radius:4px;font-size:0.85em;background:#666;color:white;">-</span>
                 </div>
             </div>
             <div class="header-right">
@@ -1187,7 +1188,7 @@
                 document.getElementById('reviewModeTab').classList.toggle('active', modeParam === 'review');
                 document.getElementById('browseModeTab').classList.toggle('active', modeParam === 'browse');
                 document.getElementById('mainApp').classList.toggle('browse-mode', modeParam === 'browse');
-                const title = modeParam === 'browse' ? 'Produkttext Browse (Freigegeben)' : 'Produkttext Review';
+                const title = modeParam === 'browse' ? 'Produkttext Browse (Alle)' : 'Produkttext Review';
                 document.querySelector('.header h1').textContent = title;
             }
             
@@ -1251,18 +1252,21 @@
                 let sortDirection = 'desc';
                 
                 if (currentMode === 'browse') {
-                    // Browse mode: Load approved records
-                    filterFormula = '{Status}="Freigegeben"';
-                    sortField = 'Geprüft am';
+                    // Browse mode: Load ALL records (no filter)
+                    filterFormula = '';
+                    sortField = 'Erstellt am';
                     sortDirection = 'desc';
                 } else {
                     // Review mode: Load records for review
                     filterFormula = '{Status}="Zur Prüfung"';
                 }
                 
-                const data = await airtableFetch(
-                    `${AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(filterFormula)}&sort[0][field]=${encodeURIComponent(sortField)}&sort[0][direction]=${sortDirection}`
-                );
+                let url = `${AIRTABLE_TABLE_ID}?sort[0][field]=${encodeURIComponent(sortField)}&sort[0][direction]=${sortDirection}`;
+                if (filterFormula) {
+                    url += `&filterByFormula=${encodeURIComponent(filterFormula)}`;
+                }
+                
+                const data = await airtableFetch(url);
                 
                 recordQueue = data.records || [];
                 
@@ -1293,7 +1297,7 @@
             document.getElementById('mainApp').classList.toggle('browse-mode', mode === 'browse');
             
             // Update header title
-            const title = mode === 'browse' ? 'Produkttext Browse (Freigegeben)' : 'Produkttext Review';
+            const title = mode === 'browse' ? 'Produkttext Browse (Alle)' : 'Produkttext Review';
             document.querySelector('.header h1').textContent = title;
             
             // Clear comment input
@@ -1348,14 +1352,46 @@
             ampelBadge.textContent = ampel;
             ampelBadge.className = 'ampel ' + ampel;
             
+            // Status Badge (visible in browse mode)
+            const statusBadge = document.getElementById('statusBadge');
+            const status = fields['Status'] || '';
+            if (currentMode === 'browse' && status) {
+                statusBadge.textContent = status;
+                statusBadge.style.display = 'inline-block';
+                // Color based on status
+                if (status === 'Freigegeben') {
+                    statusBadge.style.background = '#22c55e';
+                } else if (status === 'Überarbeiten') {
+                    statusBadge.style.background = '#f59e0b';
+                } else if (status === 'Zur Prüfung') {
+                    statusBadge.style.background = '#3b82f6';
+                } else {
+                    statusBadge.style.background = '#666';
+                }
+            } else {
+                statusBadge.style.display = 'none';
+            }
+            
             // Old Text - als HTML rendern
             const oldText = fields['Alter Text'] || '';
             document.getElementById('oldTextContent').innerHTML = oldText || '<p style="color:#999;font-style:italic;">Kein alter Text vorhanden</p>';
             document.getElementById('oldTextLength').textContent = oldText.length + ' Zeichen';
             
             // New Text Preview
-            const newText = fields['Neuer Text'] || '';
-            document.getElementById('previewContent').innerHTML = newText || '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
+            let newText = fields['Neuer Text'] || '';
+            
+            // Check if newText looks like a JSON parsing error was stored
+            if (newText.startsWith('FEHLER') || newText.includes('JSON at position')) {
+                document.getElementById('previewContent').innerHTML = `
+                    <div style="background:#fee2e2;border:1px solid #ef4444;border-radius:8px;padding:15px;margin:10px;">
+                        <strong style="color:#dc2626;">Fehler bei Texterstellung</strong>
+                        <p style="color:#666;margin-top:8px;font-size:0.9em;">${newText}</p>
+                        <p style="color:#999;margin-top:8px;font-size:0.85em;">Dieser Datensatz muss erneut durch den Workflow verarbeitet werden.</p>
+                    </div>
+                `;
+            } else {
+                document.getElementById('previewContent').innerHTML = newText || '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
+            }
             
             // Compliance Protocol
             renderProtocol(fields);
@@ -1722,7 +1758,7 @@
         
         function showAllDone() {
             const isReviewMode = currentMode === 'review';
-            const title = isReviewMode ? 'Keine Produkte zur Prüfung vorhanden.' : 'Keine freigegebenen Produkte gefunden.';
+            const title = isReviewMode ? 'Keine Produkte zur Prüfung vorhanden.' : 'Keine Datensätze gefunden.';
             const buttonText = isReviewMode ? '🔄 Auf neue Produkte prüfen' : '🔄 Aktualisieren';
             const switchModeText = isReviewMode ? 'Alle ansehen' : 'Zur Prüfung';
             const switchModeUrl = isReviewMode ? '?mode=browse' : '?mode=review';
