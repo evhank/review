@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://energiavital.de data:; connect-src https://api.airtable.com;">
     <title>energiavital - Produkttext Review</title>
-    <!-- DOMPurify removed - using built-in sanitizeHtml() fallback for maximum compatibility -->
     <style>
         /* ============================================
            REVIEW INTERFACE - MAIN STYLES
@@ -134,16 +132,7 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
-
-        .nav-btn.logout-btn {
-            background: rgba(239, 68, 68, 0.3);
-            margin-left: 10px;
-        }
-
-        .nav-btn.logout-btn:hover {
-            background: rgba(239, 68, 68, 0.5);
-        }
-
+        
         .queue-info {
             font-size: 0.85em;
             opacity: 0.9;
@@ -996,7 +985,6 @@
                 <span class="queue-info"><span id="currentIndex">-</span> von <span id="totalCount">-</span></span>
                 <button class="nav-btn" onclick="navigatePrev()" id="prevBtn">← Zurück</button>
                 <button class="nav-btn" onclick="navigateNext()" id="nextBtn">Weiter →</button>
-                <button class="nav-btn logout-btn" onclick="logout()" title="Abmelden">🚪 Logout</button>
             </div>
         </header>
         
@@ -1090,37 +1078,9 @@
         // ============================================
         // STATE
         // ============================================
-
-        // Safe localStorage access
-        function getStoredValue(key) {
-            try {
-                return localStorage.getItem(key);
-            } catch (e) {
-                console.warn('localStorage not available:', e);
-                return null;
-            }
-        }
-
-        function setStoredValue(key, value) {
-            try {
-                localStorage.setItem(key, value);
-                return true;
-            } catch (e) {
-                console.warn('localStorage not available:', e);
-                return false;
-            }
-        }
-
-        function removeStoredValue(key) {
-            try {
-                localStorage.removeItem(key);
-            } catch (e) {
-                console.warn('localStorage not available:', e);
-            }
-        }
-
-        let token = getStoredValue('airtable_token');
-        let reviewerName = getStoredValue('reviewer_name');
+        
+        let token = localStorage.getItem('airtable_token');
+        let reviewerName = localStorage.getItem('reviewer_name');
         let currentRecord = null;
         let recordQueue = [];
         let currentQueueIndex = 0;
@@ -1149,48 +1109,10 @@
             }
         }
         
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Fallback sanitizer for when DOMPurify is not available (e.g., blocked by Safari)
-        function sanitizeHtml(html) {
-            if (typeof DOMPurify !== 'undefined') {
-                return DOMPurify.sanitize(html);
-            }
-            // Fallback: use a basic sanitizer that strips dangerous tags
-            console.warn('DOMPurify not available, using fallback sanitizer');
-            const temp = document.createElement('div');
-            temp.innerHTML = html;
-            // Remove script tags and event handlers
-            temp.querySelectorAll('script, iframe, object, embed, form').forEach(el => el.remove());
-            temp.querySelectorAll('*').forEach(el => {
-                [...el.attributes].forEach(attr => {
-                    if (attr.name.startsWith('on') || attr.value.includes('javascript:')) {
-                        el.removeAttribute(attr.name);
-                    }
-                });
-            });
-            return temp.innerHTML;
-        }
-
-        function validateToken(token) {
-            // Airtable Personal Access Tokens start with 'pat' followed by alphanumeric chars and dots
-            const tokenPattern = /^pat[a-zA-Z0-9._]{20,}$/;
-            return tokenPattern.test(token);
-        }
-
-        function sanitizeName(name) {
-            // Allow only safe characters for reviewer name
-            return name.replace(/[<>\"'&]/g, '').substring(0, 50);
-        }
-
         function saveSetup() {
-            const inputName = sanitizeName(document.getElementById('nameInput').value.trim());
+            const inputName = document.getElementById('nameInput').value.trim();
             const inputToken = document.getElementById('tokenInput').value.trim();
-
+            
             if (!inputName) {
                 alert('Bitte Namen eingeben!');
                 return;
@@ -1199,13 +1121,9 @@
                 alert('Bitte Token eingeben!');
                 return;
             }
-            if (!validateToken(inputToken)) {
-                alert('Ungültiges Token-Format! Airtable Personal Access Tokens beginnen mit "pat".');
-                return;
-            }
-
-            setStoredValue('reviewer_name', inputName);
-            setStoredValue('airtable_token', inputToken);
+            
+            localStorage.setItem('reviewer_name', inputName);
+            localStorage.setItem('airtable_token', inputToken);
             reviewerName = inputName;
             token = inputToken;
             document.getElementById('setupScreen').style.display = 'none';
@@ -1292,97 +1210,77 @@
         async function displayRecord(record) {
             currentRecord = record;
             const fields = record.fields;
-
-            const mainApp = document.getElementById('mainApp');
-            const productName = document.getElementById('productName');
-            const productSku = document.getElementById('productSku');
-            const ampelBadge = document.getElementById('ampelBadge');
-
-            // Null-check to prevent errors if elements don't exist
-            if (!mainApp || !productName || !productSku || !ampelBadge) {
-                console.error('Required DOM elements not found');
-                return;
-            }
-
-            mainApp.style.display = 'block';
-
+            
+            document.getElementById('mainApp').style.display = 'block';
+            
             // Header
-            productName.textContent = fields['Produkt'] || '-';
-            productSku.textContent = fields['Produktnummer'] || '-';
-
+            document.getElementById('productName').textContent = fields['Produkt'] || '-';
+            document.getElementById('productSku').textContent = fields['Produktnummer'] || '-';
+            
+            const ampelBadge = document.getElementById('ampelBadge');
             const ampel = fields['Ampel'] || 'GRÜN';
             ampelBadge.textContent = ampel;
             ampelBadge.className = 'ampel ' + ampel;
             
-            // Get remaining elements with null-checks
-            const oldTextContent = document.getElementById('oldTextContent');
-            const oldTextLength = document.getElementById('oldTextLength');
-            const previewContent = document.getElementById('previewContent');
-            const commentInput = document.getElementById('commentInput');
-            const reviewerNameDisplay = document.getElementById('reviewerNameDisplay');
-
-            // Old Text - als HTML rendern (sanitized)
+            // Old Text - als HTML rendern
             const oldText = fields['Alter Text'] || '';
-            if (oldTextContent) {
-                oldTextContent.innerHTML = oldText
-                    ? sanitizeHtml(oldText)
-                    : '<p style="color:#999;font-style:italic;">Kein alter Text vorhanden</p>';
-            }
-            if (oldTextLength) {
-                oldTextLength.textContent = oldText.length + ' Zeichen';
-            }
-
-            // New Text Preview (sanitized)
+            document.getElementById('oldTextContent').innerHTML = oldText || '<p style="color:#999;font-style:italic;">Kein alter Text vorhanden</p>';
+            document.getElementById('oldTextLength').textContent = oldText.length + ' Zeichen';
+            
+            // New Text Preview
             const newText = fields['Neuer Text'] || '';
-            if (previewContent) {
-                previewContent.innerHTML = newText
-                    ? sanitizeHtml(newText)
-                    : '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
-            }
-
+            document.getElementById('previewContent').innerHTML = newText || '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
+            
             // Compliance Protocol
             renderProtocol(fields);
-
+            
             // Load existing comment
-            if (commentInput) {
-                commentInput.value = fields['Prüfer-Kommentar'] || '';
-            }
-
+            document.getElementById('commentInput').value = fields['Prüfer-Kommentar'] || '';
+            
             // Show reviewer name
-            if (reviewerNameDisplay) {
-                reviewerNameDisplay.textContent = reviewerName || '-';
-            }
+            document.getElementById('reviewerNameDisplay').textContent = reviewerName || '-';
         }
         
         function renderProtocol(fields) {
             const container = document.getElementById('protocolContent');
-            if (!container) return;
-
             let protokoll = fields['Compliance-Protokoll'] || '';
             const ampel = fields['Ampel'] || 'GRÜN';
-
-            // Try to parse as JSON (might be double-stringified from n8n)
+            
+            // Try to parse as JSON (might be in various formats from n8n/Anthropic API)
             let protocolData = null;
             try {
-                // First attempt
-                protocolData = JSON.parse(protokoll);
-
-                // If it's still a string, parse again (double-encoded)
-                if (typeof protocolData === 'string') {
-                    protocolData = JSON.parse(protocolData);
+                // First attempt - direct parse
+                let parsed = JSON.parse(protokoll);
+                
+                // Check if it's Anthropic API response format: [{"content":[{"type":"text","text":"..."}]}]
+                if (Array.isArray(parsed) && parsed[0]?.content?.[0]?.text) {
+                    // Extract the actual JSON from Anthropic response
+                    parsed = JSON.parse(parsed[0].content[0].text);
                 }
+                
+                // Check if it's just content array: {"content":[{"type":"text","text":"..."}]}
+                if (parsed?.content?.[0]?.text) {
+                    parsed = JSON.parse(parsed.content[0].text);
+                }
+                
+                // If it's still a string, parse again (double-encoded)
+                if (typeof parsed === 'string') {
+                    parsed = JSON.parse(parsed);
+                }
+                
+                protocolData = parsed;
             } catch (e) {
                 // Not JSON, display as text
                 console.log('Protocol parse error:', e);
             }
-
-            if (protocolData && typeof protocolData === 'object') {
-                container.innerHTML = sanitizeHtml(renderProtocolJSON(protocolData, fields));
+            
+            if (protocolData && typeof protocolData === 'object' && protocolData.ampel) {
+                container.innerHTML = renderProtocolJSON(protocolData, fields);
             } else if (protokoll) {
-                container.innerHTML = sanitizeHtml(`<div class="protocol-item">${escapeHtml(protokoll).replace(/\n/g, '<br>')}</div>`);
+                container.innerHTML = `<div class="protocol-item">${protokoll.replace(/\n/g, '<br>')}</div>`;
             } else {
                 // Generate basic protocol from available data
-                container.innerHTML = sanitizeHtml(renderBasicProtocol(fields, ampel));
+                container.innerHTML = renderBasicProtocol(fields, ampel);
             }
         }
         
@@ -1397,8 +1295,8 @@
                         Zusammenfassung
                     </div>
                     <div class="protocol-item ${data.ampel === 'GRÜN' ? 'success' : data.ampel === 'GELB' ? 'warning' : 'error'}">
-                        <strong>${escapeHtml(data.recommendation || 'Keine Empfehlung')}</strong><br>
-                        ${escapeHtml(data.summary || '')}
+                        <strong>${data.recommendation || 'Keine Empfehlung'}</strong><br>
+                        ${data.summary || ''}
                     </div>
                 </div>
             `;
@@ -1415,7 +1313,7 @@
                             ${data.efsa.claimsUsed.map(c => `
                                 <div class="claim-item">
                                     <span class="claim-status">${c.valid ? '✓' : '✗'}</span>
-                                    <span><strong>${escapeHtml(c.ingredient || '')}:</strong> ${escapeHtml(c.claim || '')}</span>
+                                    <span><strong>${c.ingredient}:</strong> ${c.claim}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -1455,7 +1353,7 @@
             const metaDesc = fields['Meta-Description'] || '';
             const keywords = fields['Keywords'] || '';
             const shortDesc = fields['Short-Description'] || '';
-
+            
             if (metaTitle || metaDesc || keywords || shortDesc) {
                 html += `
                     <div class="protocol-section">
@@ -1463,25 +1361,25 @@
                         ${metaTitle ? `
                             <div class="meta-field">
                                 <div class="meta-label">Meta-Title:</div>
-                                <div class="meta-value">${escapeHtml(metaTitle)}</div>
+                                <div class="meta-value">${metaTitle}</div>
                             </div>
                         ` : ''}
                         ${metaDesc ? `
                             <div class="meta-field">
                                 <div class="meta-label">Meta-Description:</div>
-                                <div class="meta-value">${escapeHtml(metaDesc)}</div>
+                                <div class="meta-value">${metaDesc}</div>
                             </div>
                         ` : ''}
                         ${keywords ? `
                             <div class="meta-field">
                                 <div class="meta-label">Keywords:</div>
-                                <div class="meta-value keywords">${escapeHtml(keywords)}</div>
+                                <div class="meta-value keywords">${keywords}</div>
                             </div>
                         ` : ''}
                         ${shortDesc ? `
                             <div class="meta-field">
                                 <div class="meta-label">Short-Description:</div>
-                                <div class="meta-value">${escapeHtml(shortDesc)}</div>
+                                <div class="meta-value">${shortDesc}</div>
                             </div>
                         ` : ''}
                     </div>
@@ -1495,8 +1393,8 @@
                         <div class="protocol-section-title">Häufige Einwände</div>
                         ${data.faq.map(f => `
                             <div class="faq-item">
-                                <div class="faq-question">❓ ${escapeHtml(f.question || '')}</div>
-                                <div class="faq-answer">${escapeHtml(f.answer || '')}</div>
+                                <div class="faq-question">❓ ${f.question}</div>
+                                <div class="faq-answer">${f.answer}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -1545,28 +1443,28 @@
                 ${metaTitle ? `
                 <div class="protocol-section">
                     <div class="protocol-section-title">Meta-Title</div>
-                    <div class="protocol-item">${escapeHtml(metaTitle)}</div>
+                    <div class="protocol-item">${metaTitle}</div>
                 </div>
                 ` : ''}
-
+                
                 ${metaDesc ? `
                 <div class="protocol-section">
                     <div class="protocol-section-title">Meta-Description</div>
-                    <div class="protocol-item">${escapeHtml(metaDesc)}</div>
+                    <div class="protocol-item">${metaDesc}</div>
                 </div>
                 ` : ''}
-
+                
                 ${keywords ? `
                 <div class="protocol-section">
                     <div class="protocol-section-title">Keywords</div>
-                    <div class="protocol-item" style="font-family:monospace;font-size:12px;">${escapeHtml(keywords)}</div>
+                    <div class="protocol-item" style="font-family:monospace;font-size:12px;">${keywords}</div>
                 </div>
                 ` : ''}
-
+                
                 ${shortDesc ? `
                 <div class="protocol-section">
                     <div class="protocol-section-title">Short-Description</div>
-                    <div class="protocol-item">${escapeHtml(shortDesc)}</div>
+                    <div class="protocol-item">${shortDesc}</div>
                 </div>
                 ` : ''}
             `;
@@ -1624,18 +1522,10 @@
         // ============================================
         
         function updateQueueNavigation() {
-            const currentIndexEl = document.getElementById('currentIndex');
-            const totalCountEl = document.getElementById('totalCount');
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-
-            // Null-check to prevent errors if elements don't exist (e.g., after showError)
-            if (!currentIndexEl || !totalCountEl || !prevBtn || !nextBtn) return;
-
-            currentIndexEl.textContent = currentQueueIndex + 1;
-            totalCountEl.textContent = recordQueue.length;
-            prevBtn.disabled = currentQueueIndex === 0;
-            nextBtn.disabled = currentQueueIndex >= recordQueue.length - 1;
+            document.getElementById('currentIndex').textContent = currentQueueIndex + 1;
+            document.getElementById('totalCount').textContent = recordQueue.length;
+            document.getElementById('prevBtn').disabled = currentQueueIndex === 0;
+            document.getElementById('nextBtn').disabled = currentQueueIndex >= recordQueue.length - 1;
         }
         
         async function navigatePrev() {
@@ -1657,20 +1547,7 @@
         // ============================================
         // UI HELPERS
         // ============================================
-
-        function logout() {
-            if (confirm('Möchten Sie sich wirklich abmelden? Ihre Zugangsdaten werden gelöscht.')) {
-                removeStoredValue('airtable_token');
-                removeStoredValue('reviewer_name');
-                token = null;
-                reviewerName = null;
-                document.getElementById('mainApp').style.display = 'none';
-                document.getElementById('setupScreen').style.display = 'flex';
-                document.getElementById('nameInput').value = '';
-                document.getElementById('tokenInput').value = '';
-            }
-        }
-
+        
         function setDevice(device, btn) {
             document.getElementById('previewFrame').className = 'preview-frame ' + device;
             document.querySelectorAll('.device-toggle button').forEach(b => b.classList.remove('active'));
@@ -1685,7 +1562,7 @@
             document.getElementById('mainApp').innerHTML = `
                 <div class="error-state">
                     <h2>⚠️ Fehler</h2>
-                    <p>${escapeHtml(message)}</p>
+                    <p>${message}</p>
                     <button onclick="window.location.reload()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">
                         Neu laden
                     </button>
