@@ -1037,8 +1037,8 @@
                 <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" class="header-logo">
                 <h1>Produkttext Review</h1>
                 <div class="mode-tabs">
-                    <button class="mode-tab active" onclick="switchMode('review')" id="reviewModeTab">✏️ Review</button>
-                    <button class="mode-tab" onclick="switchMode('browse')" id="browseModeTab">👁️ Browse</button>
+                    <button class="mode-tab active" onclick="switchMode('review')" id="reviewModeTab">Review</button>
+                    <button class="mode-tab" onclick="switchMode('browse')" id="browseModeTab">Browse</button>
                 </div>
                 <div class="header-links">
                     <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" class="header-link">📊 Airtable</a>
@@ -1102,7 +1102,7 @@
         
         <!-- Browse Mode Banner -->
         <div class="browse-mode-banner" id="browseModeBanner">
-            👁️ Browse-Modus: Nur Ansicht – keine Änderungen möglich
+            Browse-Modus: Nur Ansicht – keine Änderungen möglich
         </div>
         
         <!-- Action Bar -->
@@ -1179,6 +1179,17 @@
             
             const urlParams = new URLSearchParams(window.location.search);
             const recordId = urlParams.get('id');
+            const modeParam = urlParams.get('mode');
+            
+            // Set mode from URL parameter
+            if (modeParam === 'browse' || modeParam === 'review') {
+                currentMode = modeParam;
+                document.getElementById('reviewModeTab').classList.toggle('active', modeParam === 'review');
+                document.getElementById('browseModeTab').classList.toggle('active', modeParam === 'browse');
+                document.getElementById('mainApp').classList.toggle('browse-mode', modeParam === 'browse');
+                const title = modeParam === 'browse' ? 'Produkttext Browse (Freigegeben)' : 'Produkttext Review';
+                document.querySelector('.header h1').textContent = title;
+            }
             
             if (recordId) {
                 // Direct link to specific record
@@ -1713,8 +1724,8 @@
             const isReviewMode = currentMode === 'review';
             const title = isReviewMode ? 'Keine Produkte zur Prüfung vorhanden.' : 'Keine freigegebenen Produkte gefunden.';
             const buttonText = isReviewMode ? '🔄 Auf neue Produkte prüfen' : '🔄 Aktualisieren';
-            const switchModeText = isReviewMode ? '👁️ Freigegebene ansehen' : '✏️ Zur Prüfung';
-            const switchModeTarget = isReviewMode ? 'browse' : 'review';
+            const switchModeText = isReviewMode ? 'Alle ansehen' : 'Zur Prüfung';
+            const switchModeUrl = isReviewMode ? '?mode=browse' : '?mode=review';
             
             document.getElementById('mainApp').innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);color:#fff;text-align:center;padding:40px;">
@@ -1724,7 +1735,7 @@
                         <button onclick="window.location.reload()" style="background:#a0ba32;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
                             ${buttonText}
                         </button>
-                        <button onclick="switchMode('${switchModeTarget}')" style="background:#3b82f6;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
+                        <button onclick="window.location.href='${switchModeUrl}'" style="background:#3b82f6;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
                             ${switchModeText}
                         </button>
                     </div>
