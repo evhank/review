@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>energiavital - Produkttext Review</title>
+    <title>Compliance Reviewer - energiavital</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23a0ba32'/><path d='M25 50 L42 67 L75 34' stroke='white' stroke-width='12' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
     <style>
         /* ============================================
            REVIEW INTERFACE - MAIN STYLES
@@ -46,6 +47,26 @@
             height: 36px;
             margin-right: 5px;
             filter: brightness(0) invert(1);
+        }
+        
+        .header-branding {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-right: 15px;
+        }
+        
+        .header-branding .header-logo {
+            margin-right: 0;
+            margin-bottom: 2px;
+        }
+        
+        .app-name {
+            font-size: 0.7em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            opacity: 0.9;
+            text-transform: uppercase;
         }
         
         .header h1 {
@@ -219,6 +240,7 @@
         .stat-card.yellow .stat-value { color: #eab308; }
         .stat-card.red .stat-value { color: #ef4444; }
         .stat-card.blue .stat-value { color: #3b82f6; }
+        .stat-card.purple .stat-value { color: #8b5cf6; }
         
         .overview-table-wrapper {
             background: white;
@@ -267,6 +289,7 @@
             font-weight: 500;
         }
         
+        .overview-table .status-cell.live { background: #ede9fe; color: #6d28d9; }
         .overview-table .status-cell.freigegeben { background: #dcfce7; color: #166534; }
         .overview-table .status-cell.ueberarbeiten { background: #fef3c7; color: #92400e; }
         .overview-table .status-cell.zur-pruefung { background: #dbeafe; color: #1e40af; }
@@ -1252,6 +1275,10 @@
     <!-- Setup Screen (wenn kein Token) -->
     <div id="setupScreen" class="setup-screen" style="display: none;">
         <div class="setup-card">
+            <div style="text-align:center;margin-bottom:20px;">
+                <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" style="height:40px;filter:brightness(0) saturate(100%) invert(65%) sepia(52%) saturate(456%) hue-rotate(35deg) brightness(97%) contrast(87%);">
+                <div style="font-size:0.75em;font-weight:600;color:#a0ba32;letter-spacing:0.5px;margin-top:4px;">COMPLIANCE REVIEWER</div>
+            </div>
             <h1>🔐 Setup</h1>
             <p>Bitte Zugangsdaten eingeben, um fortzufahren.</p>
             <label for="nameInput">Dein Name</label>
@@ -1273,7 +1300,10 @@
     <!-- Shared Header (always visible when logged in) -->
     <header class="header" id="mainHeader" style="display: none;">
         <div class="header-left">
-            <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" class="header-logo">
+            <div class="header-branding">
+                <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" class="header-logo">
+                <span class="app-name">Compliance Reviewer</span>
+            </div>
             <h1>Produkttext Review</h1>
             <div class="mode-tabs">
                 <button class="mode-tab active" onclick="switchMode('review')" id="reviewModeTab">Review</button>
@@ -1380,6 +1410,10 @@
                 <div class="stat-value" id="statTotal">-</div>
                 <div class="stat-label">Gesamt</div>
             </div>
+            <div class="stat-card purple">
+                <div class="stat-value" id="statLive">-</div>
+                <div class="stat-label">Live</div>
+            </div>
             <div class="stat-card green">
                 <div class="stat-value" id="statApproved">-</div>
                 <div class="stat-label">Freigegeben</div>
@@ -1396,6 +1430,7 @@
         
         <div class="filter-tabs">
             <button class="filter-tab active" onclick="setOverviewFilter('all')">Alle</button>
+            <button class="filter-tab" onclick="setOverviewFilter('Live')">Live</button>
             <button class="filter-tab" onclick="setOverviewFilter('Freigegeben')">Freigegeben</button>
             <button class="filter-tab" onclick="setOverviewFilter('Überarbeiten')">Überarbeiten</button>
             <button class="filter-tab" onclick="setOverviewFilter('Zur Prüfung')">Zur Prüfung</button>
@@ -1683,11 +1718,13 @@
         
         function updateOverviewStats() {
             const total = allRecords.length;
+            const live = allRecords.filter(r => r.fields['Status'] === 'Live').length;
             const approved = allRecords.filter(r => r.fields['Status'] === 'Freigegeben').length;
             const revise = allRecords.filter(r => r.fields['Status'] === 'Überarbeiten').length;
             const pending = allRecords.filter(r => r.fields['Status'] === 'Zur Prüfung').length;
             
             document.getElementById('statTotal').textContent = total;
+            document.getElementById('statLive').textContent = live;
             document.getElementById('statApproved').textContent = approved;
             document.getElementById('statRevise').textContent = revise;
             document.getElementById('statPending').textContent = pending;
@@ -1737,7 +1774,8 @@
                 const geprueftAm = fields['Geprüft am'] ? new Date(fields['Geprüft am']).toLocaleDateString('de-DE') : '-';
                 const erstelltAm = fields['Erstellt am'] ? new Date(fields['Erstellt am']).toLocaleDateString('de-DE') : '-';
                 
-                const statusClass = status === 'Freigegeben' ? 'freigegeben' : 
+                const statusClass = status === 'Live' ? 'live' :
+                                   status === 'Freigegeben' ? 'freigegeben' : 
                                    status === 'Überarbeiten' ? 'ueberarbeiten' : 'zur-pruefung';
                 const ampelClass = ampel === 'GRÜN' ? 'gruen' : ampel === 'GELB' ? 'gelb' : 'rot';
                 
