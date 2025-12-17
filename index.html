@@ -141,6 +141,190 @@
             display: block;
         }
         
+        /* Overview Page Styles */
+        .overview-container {
+            display: none;
+            padding: 24px;
+            background: #f5f5f5;
+            min-height: calc(100vh - 56px);
+        }
+        
+        .overview-container.active {
+            display: block;
+        }
+        
+        .overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .overview-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .overview-search {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .overview-search input {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 250px;
+        }
+        
+        .overview-search input:focus {
+            outline: none;
+            border-color: #a0ba32;
+            box-shadow: 0 0 0 3px rgba(160, 186, 50, 0.1);
+        }
+        
+        .overview-stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .stat-card .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .stat-card .stat-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        .stat-card.green .stat-value { color: #22c55e; }
+        .stat-card.yellow .stat-value { color: #eab308; }
+        .stat-card.red .stat-value { color: #ef4444; }
+        .stat-card.blue .stat-value { color: #3b82f6; }
+        
+        .overview-table-wrapper {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .overview-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .overview-table th {
+            background: #f9f6f1;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+        }
+        
+        .overview-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9em;
+        }
+        
+        .overview-table tbody tr {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        
+        .overview-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .overview-table .status-cell {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        .overview-table .status-cell.freigegeben { background: #dcfce7; color: #166534; }
+        .overview-table .status-cell.ueberarbeiten { background: #fef3c7; color: #92400e; }
+        .overview-table .status-cell.zur-pruefung { background: #dbeafe; color: #1e40af; }
+        
+        .overview-table .ampel-cell {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .overview-table .ampel-cell.gruen { background: #22c55e; }
+        .overview-table .ampel-cell.gelb { background: #eab308; }
+        .overview-table .ampel-cell.rot { background: #ef4444; }
+        
+        .overview-table .date-cell {
+            color: #666;
+            font-size: 0.85em;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-tab {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        
+        .filter-tab:hover {
+            border-color: #a0ba32;
+        }
+        
+        .filter-tab.active {
+            background: #a0ba32;
+            color: white;
+            border-color: #a0ba32;
+        }
+        
+        /* Hide navigation in overview mode */
+        .overview-mode .product-info,
+        .overview-mode .header-right {
+            display: none;
+        }
+        
         .product-info {
             display: flex;
             align-items: center;
@@ -1039,6 +1223,7 @@
                 <div class="mode-tabs">
                     <button class="mode-tab active" onclick="switchMode('review')" id="reviewModeTab">Review</button>
                     <button class="mode-tab" onclick="switchMode('browse')" id="browseModeTab">Browse</button>
+                    <button class="mode-tab" onclick="switchMode('overview')" id="overviewModeTab">Übersicht</button>
                 </div>
                 <div class="header-links">
                     <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" class="header-link">📊 Airtable</a>
@@ -1125,6 +1310,60 @@
         </div>
     </div>
     
+    <!-- Overview Page (separate from mainApp) -->
+    <div id="overviewPage" class="overview-container">
+        <div class="overview-header">
+            <h2 class="overview-title">Alle Produkttexte</h2>
+            <div class="overview-search">
+                <input type="text" id="searchInput" placeholder="Produktnummer suchen..." onkeyup="filterOverviewTable()">
+            </div>
+        </div>
+        
+        <div class="overview-stats" id="overviewStats">
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">-</div>
+                <div class="stat-label">Gesamt</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-value" id="statApproved">-</div>
+                <div class="stat-label">Freigegeben</div>
+            </div>
+            <div class="stat-card yellow">
+                <div class="stat-value" id="statRevise">-</div>
+                <div class="stat-label">Überarbeiten</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-value" id="statPending">-</div>
+                <div class="stat-label">Zur Prüfung</div>
+            </div>
+        </div>
+        
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="setOverviewFilter('all')">Alle</button>
+            <button class="filter-tab" onclick="setOverviewFilter('Freigegeben')">Freigegeben</button>
+            <button class="filter-tab" onclick="setOverviewFilter('Überarbeiten')">Überarbeiten</button>
+            <button class="filter-tab" onclick="setOverviewFilter('Zur Prüfung')">Zur Prüfung</button>
+        </div>
+        
+        <div class="overview-table-wrapper">
+            <table class="overview-table">
+                <thead>
+                    <tr>
+                        <th>Produktnummer</th>
+                        <th>Produktname</th>
+                        <th>Status</th>
+                        <th>Ampel</th>
+                        <th>Geprüft von</th>
+                        <th>Datum</th>
+                    </tr>
+                </thead>
+                <tbody id="overviewTableBody">
+                    <tr><td colspan="6" class="no-results">Lade Daten...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
     <script>
         // ============================================
         // CONFIGURATION
@@ -1183,16 +1422,30 @@
             const modeParam = urlParams.get('mode');
             
             // Set mode from URL parameter
-            if (modeParam === 'browse' || modeParam === 'review') {
+            if (modeParam === 'browse' || modeParam === 'review' || modeParam === 'overview') {
                 currentMode = modeParam;
                 document.getElementById('reviewModeTab').classList.toggle('active', modeParam === 'review');
                 document.getElementById('browseModeTab').classList.toggle('active', modeParam === 'browse');
+                document.getElementById('overviewModeTab').classList.toggle('active', modeParam === 'overview');
                 document.getElementById('mainApp').classList.toggle('browse-mode', modeParam === 'browse');
-                const title = modeParam === 'browse' ? 'Produkttext Browse (Alle)' : 'Produkttext Review';
+                
+                // Show/hide containers
+                document.getElementById('mainApp').style.display = modeParam === 'overview' ? 'none' : 'block';
+                document.getElementById('overviewPage').classList.toggle('active', modeParam === 'overview');
+                
+                // Update header class for overview mode
+                document.querySelector('.header').classList.toggle('overview-mode', modeParam === 'overview');
+                
+                let title = 'Produkttext Review';
+                if (modeParam === 'browse') title = 'Produkttext Browse (Alle)';
+                if (modeParam === 'overview') title = 'Produkttext Übersicht';
                 document.querySelector('.header h1').textContent = title;
             }
             
-            if (recordId) {
+            if (modeParam === 'overview') {
+                // Load overview data
+                await loadOverviewData();
+            } else if (recordId) {
                 // Direct link to specific record
                 await loadRecord(recordId);
             } else {
@@ -1292,20 +1545,141 @@
             // Update tab styles
             document.getElementById('reviewModeTab').classList.toggle('active', mode === 'review');
             document.getElementById('browseModeTab').classList.toggle('active', mode === 'browse');
+            document.getElementById('overviewModeTab').classList.toggle('active', mode === 'overview');
+            
+            // Show/hide containers
+            document.getElementById('mainApp').style.display = mode === 'overview' ? 'none' : 'block';
+            document.getElementById('overviewPage').classList.toggle('active', mode === 'overview');
             
             // Update body class for browse mode styling
             document.getElementById('mainApp').classList.toggle('browse-mode', mode === 'browse');
             
+            // Update header class for overview mode
+            document.querySelector('.header').classList.toggle('overview-mode', mode === 'overview');
+            
             // Update header title
-            const title = mode === 'browse' ? 'Produkttext Browse (Alle)' : 'Produkttext Review';
+            let title = 'Produkttext Review';
+            if (mode === 'browse') title = 'Produkttext Browse (Alle)';
+            if (mode === 'overview') title = 'Produkttext Übersicht';
             document.querySelector('.header h1').textContent = title;
             
             // Clear comment input
             const commentInput = document.getElementById('commentInput');
             if (commentInput) commentInput.value = '';
             
-            // Reload queue with new filter
-            loadQueue();
+            // Load appropriate data
+            if (mode === 'overview') {
+                loadOverviewData();
+            } else {
+                loadQueue();
+            }
+        }
+        
+        // ============================================
+        // OVERVIEW FUNCTIONS
+        // ============================================
+        
+        let allRecords = [];
+        let currentOverviewFilter = 'all';
+        
+        async function loadOverviewData() {
+            try {
+                // Load all records
+                const data = await airtableFetch(
+                    `${AIRTABLE_TABLE_ID}?sort[0][field]=Erstellt am&sort[0][direction]=desc`
+                );
+                
+                allRecords = data.records || [];
+                updateOverviewStats();
+                renderOverviewTable();
+                
+            } catch (error) {
+                document.getElementById('overviewTableBody').innerHTML = 
+                    `<tr><td colspan="6" class="no-results">Fehler beim Laden: ${error.message}</td></tr>`;
+            }
+        }
+        
+        function updateOverviewStats() {
+            const total = allRecords.length;
+            const approved = allRecords.filter(r => r.fields['Status'] === 'Freigegeben').length;
+            const revise = allRecords.filter(r => r.fields['Status'] === 'Überarbeiten').length;
+            const pending = allRecords.filter(r => r.fields['Status'] === 'Zur Prüfung').length;
+            
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statApproved').textContent = approved;
+            document.getElementById('statRevise').textContent = revise;
+            document.getElementById('statPending').textContent = pending;
+        }
+        
+        function renderOverviewTable() {
+            const tbody = document.getElementById('overviewTableBody');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            // Filter records
+            let filteredRecords = allRecords;
+            
+            // Apply status filter
+            if (currentOverviewFilter !== 'all') {
+                filteredRecords = filteredRecords.filter(r => r.fields['Status'] === currentOverviewFilter);
+            }
+            
+            // Apply search filter
+            if (searchTerm) {
+                filteredRecords = filteredRecords.filter(r => {
+                    const produktnummer = (r.fields['Produktnummer'] || '').toLowerCase();
+                    const produktname = (r.fields['Produkt'] || '').toLowerCase();
+                    return produktnummer.includes(searchTerm) || produktname.includes(searchTerm);
+                });
+            }
+            
+            if (filteredRecords.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="no-results">Keine Ergebnisse gefunden</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filteredRecords.map(record => {
+                const fields = record.fields;
+                const status = fields['Status'] || '-';
+                const ampel = (fields['Ampel'] || 'GRÜN').toUpperCase();
+                const geprueftAm = fields['Geprüft am'] ? new Date(fields['Geprüft am']).toLocaleDateString('de-DE') : '-';
+                const erstelltAm = fields['Erstellt am'] ? new Date(fields['Erstellt am']).toLocaleDateString('de-DE') : '-';
+                
+                const statusClass = status === 'Freigegeben' ? 'freigegeben' : 
+                                   status === 'Überarbeiten' ? 'ueberarbeiten' : 'zur-pruefung';
+                const ampelClass = ampel === 'GRÜN' ? 'gruen' : ampel === 'GELB' ? 'gelb' : 'rot';
+                
+                return `
+                    <tr onclick="openRecordInBrowse('${record.id}')">
+                        <td><strong>${fields['Produktnummer'] || '-'}</strong></td>
+                        <td>${fields['Produkt'] || '-'}</td>
+                        <td><span class="status-cell ${statusClass}">${status}</span></td>
+                        <td><span class="ampel-cell ${ampelClass}"></span></td>
+                        <td>${fields['Geprüft von'] || '-'}</td>
+                        <td class="date-cell">${geprueftAm !== '-' ? geprueftAm : erstelltAm}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function filterOverviewTable() {
+            renderOverviewTable();
+        }
+        
+        function setOverviewFilter(filter) {
+            currentOverviewFilter = filter;
+            
+            // Update filter tab styles
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                const tabFilter = tab.textContent === 'Alle' ? 'all' : tab.textContent;
+                tab.classList.toggle('active', tabFilter === filter);
+            });
+            
+            renderOverviewTable();
+        }
+        
+        function openRecordInBrowse(recordId) {
+            // Switch to browse mode and load specific record
+            window.location.href = `?mode=browse&id=${recordId}`;
         }
         
         async function loadRecord(recordId) {
@@ -1767,12 +2141,15 @@
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);color:#fff;text-align:center;padding:40px;">
                     <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" style="height:50px;margin-bottom:30px;opacity:0.8;">
                     <p style="font-size:1.3em;color:#888;margin-bottom:30px;">${title}</p>
-                    <div style="display:flex;gap:15px;margin-bottom:30px;">
+                    <div style="display:flex;gap:15px;margin-bottom:30px;flex-wrap:wrap;justify-content:center;">
                         <button onclick="window.location.reload()" style="background:#a0ba32;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
                             ${buttonText}
                         </button>
                         <button onclick="window.location.href='${switchModeUrl}'" style="background:#3b82f6;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
                             ${switchModeText}
+                        </button>
+                        <button onclick="window.location.href='?mode=overview'" style="background:#6b7280;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
+                            Übersicht
                         </button>
                     </div>
                     <div style="display:flex;gap:15px;margin-top:20px;">
