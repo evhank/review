@@ -319,6 +319,62 @@
             border-color: #a0ba32;
         }
         
+        /* Pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            margin-top: -12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        
+        .pagination-info {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .pagination-buttons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .pagination-btn {
+            min-width: 36px;
+            height: 36px;
+            padding: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            border-color: #a0ba32;
+            background: #f9f9f9;
+        }
+        
+        .pagination-btn.active {
+            background: #a0ba32;
+            color: white;
+            border-color: #a0ba32;
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .pagination-ellipsis {
+            color: #999;
+            padding: 0 4px;
+        }
+        
         /* Hide navigation in overview mode */
         .overview-mode .product-info,
         .overview-mode .header-right {
@@ -1214,37 +1270,37 @@
         <p>Lade Produktdaten...</p>
     </div>
     
-    <!-- Main App -->
+    <!-- Shared Header (always visible when logged in) -->
+    <header class="header" id="mainHeader" style="display: none;">
+        <div class="header-left">
+            <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" class="header-logo">
+            <h1>Produkttext Review</h1>
+            <div class="mode-tabs">
+                <button class="mode-tab active" onclick="switchMode('review')" id="reviewModeTab">Review</button>
+                <button class="mode-tab" onclick="switchMode('browse')" id="browseModeTab">Browse</button>
+                <button class="mode-tab" onclick="switchMode('overview')" id="overviewModeTab">Übersicht</button>
+            </div>
+            <div class="header-links">
+                <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" class="header-link">📊 Airtable</a>
+                <span class="header-link" onclick="showHelp()">❓ Hilfe</span>
+                <span class="header-link" onclick="showCriteria()">📋 Prüfkriterien</span>
+            </div>
+        </div>
+        <div class="product-info" id="productInfoBar">
+            <span class="product-name" id="productName">-</span>
+            <span class="product-sku" id="productSku">-</span>
+            <span class="ampel" id="ampelBadge">-</span>
+            <span class="status-badge" id="statusBadge" style="display:none;padding:4px 10px;border-radius:4px;font-size:0.85em;background:#666;color:white;">-</span>
+        </div>
+        <div class="header-right" id="navControls">
+            <span class="queue-info"><span id="currentIndex">-</span> von <span id="totalCount">-</span></span>
+            <button class="nav-btn" onclick="navigatePrev()" id="prevBtn">← Zurück</button>
+            <button class="nav-btn" onclick="navigateNext()" id="nextBtn">Weiter →</button>
+        </div>
+    </header>
+    
+    <!-- Review/Browse Content -->
     <div id="mainApp" style="display: none;">
-        <header class="header">
-            <div class="header-left">
-                <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" class="header-logo">
-                <h1>Produkttext Review</h1>
-                <div class="mode-tabs">
-                    <button class="mode-tab active" onclick="switchMode('review')" id="reviewModeTab">Review</button>
-                    <button class="mode-tab" onclick="switchMode('browse')" id="browseModeTab">Browse</button>
-                    <button class="mode-tab" onclick="switchMode('overview')" id="overviewModeTab">Übersicht</button>
-                </div>
-                <div class="header-links">
-                    <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" class="header-link">📊 Airtable</a>
-                    <span class="header-link" onclick="showHelp()">❓ Hilfe</span>
-                    <span class="header-link" onclick="showCriteria()">📋 Prüfkriterien</span>
-                </div>
-            </div>
-                <div class="product-info">
-                    <span class="product-name" id="productName">-</span>
-                    <span class="product-sku" id="productSku">-</span>
-                    <span class="ampel" id="ampelBadge">-</span>
-                    <span class="status-badge" id="statusBadge" style="display:none;padding:4px 10px;border-radius:4px;font-size:0.85em;background:#666;color:white;">-</span>
-                </div>
-            </div>
-            <div class="header-right">
-                <span class="queue-info"><span id="currentIndex">-</span> von <span id="totalCount">-</span></span>
-                <button class="nav-btn" onclick="navigatePrev()" id="prevBtn">← Zurück</button>
-                <button class="nav-btn" onclick="navigateNext()" id="nextBtn">Weiter →</button>
-            </div>
-        </header>
-        
         <div class="main-container">
             <!-- Left Panel: Old Text -->
             <div class="panel">
@@ -1362,6 +1418,10 @@
                 </tbody>
             </table>
         </div>
+        
+        <div class="pagination-container" id="paginationContainer">
+            <!-- Pagination wird dynamisch eingefügt -->
+        </div>
     </div>
     
     <script>
@@ -1412,10 +1472,14 @@
         async function init() {
             if (!token || !reviewerName) {
                 document.getElementById('setupScreen').style.display = 'flex';
+                document.getElementById('mainHeader').style.display = 'none';
                 // Falls einer der Werte existiert, vorausfüllen
                 if (reviewerName) document.getElementById('nameInput').value = reviewerName;
                 return;
             }
+            
+            // Show header
+            document.getElementById('mainHeader').style.display = 'flex';
             
             const urlParams = new URLSearchParams(window.location.search);
             const recordId = urlParams.get('id');
@@ -1433,8 +1497,9 @@
                 document.getElementById('mainApp').style.display = modeParam === 'overview' ? 'none' : 'block';
                 document.getElementById('overviewPage').classList.toggle('active', modeParam === 'overview');
                 
-                // Update header class for overview mode
-                document.querySelector('.header').classList.toggle('overview-mode', modeParam === 'overview');
+                // Show/hide header elements in overview mode
+                document.getElementById('productInfoBar').style.display = modeParam === 'overview' ? 'none' : 'flex';
+                document.getElementById('navControls').style.display = modeParam === 'overview' ? 'none' : 'flex';
                 
                 let title = 'Produkttext Review';
                 if (modeParam === 'browse') title = 'Produkttext Browse (Alle)';
@@ -1551,11 +1616,12 @@
             document.getElementById('mainApp').style.display = mode === 'overview' ? 'none' : 'block';
             document.getElementById('overviewPage').classList.toggle('active', mode === 'overview');
             
+            // Show/hide header elements in overview mode
+            document.getElementById('productInfoBar').style.display = mode === 'overview' ? 'none' : 'flex';
+            document.getElementById('navControls').style.display = mode === 'overview' ? 'none' : 'flex';
+            
             // Update body class for browse mode styling
             document.getElementById('mainApp').classList.toggle('browse-mode', mode === 'browse');
-            
-            // Update header class for overview mode
-            document.querySelector('.header').classList.toggle('overview-mode', mode === 'overview');
             
             // Update header title
             let title = 'Produkttext Review';
@@ -1581,15 +1647,31 @@
         
         let allRecords = [];
         let currentOverviewFilter = 'all';
+        let currentPage = 1;
+        const itemsPerPage = 50;
         
         async function loadOverviewData() {
+            document.getElementById('overviewTableBody').innerHTML = 
+                '<tr><td colspan="6" class="no-results">Lade Daten...</td></tr>';
+            
             try {
-                // Load all records
-                const data = await airtableFetch(
-                    `${AIRTABLE_TABLE_ID}?sort[0][field]=Erstellt am&sort[0][direction]=desc`
-                );
+                // Load ALL records with Airtable pagination (offset)
+                allRecords = [];
+                let offset = null;
                 
-                allRecords = data.records || [];
+                do {
+                    let url = `${AIRTABLE_TABLE_ID}?sort[0][field]=Erstellt am&sort[0][direction]=desc&pageSize=100`;
+                    if (offset) {
+                        url += `&offset=${offset}`;
+                    }
+                    
+                    const data = await airtableFetch(url);
+                    allRecords = allRecords.concat(data.records || []);
+                    offset = data.offset; // Will be undefined when no more pages
+                    
+                } while (offset);
+                
+                currentPage = 1;
                 updateOverviewStats();
                 renderOverviewTable();
                 
@@ -1611,11 +1693,8 @@
             document.getElementById('statPending').textContent = pending;
         }
         
-        function renderOverviewTable() {
-            const tbody = document.getElementById('overviewTableBody');
+        function getFilteredRecords() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
-            // Filter records
             let filteredRecords = allRecords;
             
             // Apply status filter
@@ -1632,12 +1711,26 @@
                 });
             }
             
+            return filteredRecords;
+        }
+        
+        function renderOverviewTable() {
+            const tbody = document.getElementById('overviewTableBody');
+            const filteredRecords = getFilteredRecords();
+            
+            // Calculate pagination
+            const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageRecords = filteredRecords.slice(startIndex, endIndex);
+            
             if (filteredRecords.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="no-results">Keine Ergebnisse gefunden</td></tr>';
+                renderPagination(0, 0);
                 return;
             }
             
-            tbody.innerHTML = filteredRecords.map(record => {
+            tbody.innerHTML = pageRecords.map(record => {
                 const fields = record.fields;
                 const status = fields['Status'] || '-';
                 const ampel = (fields['Ampel'] || 'GRÜN').toUpperCase();
@@ -1659,14 +1752,77 @@
                     </tr>
                 `;
             }).join('');
+            
+            renderPagination(filteredRecords.length, totalPages);
+        }
+        
+        function renderPagination(totalItems, totalPages) {
+            const container = document.getElementById('paginationContainer');
+            
+            if (totalItems <= itemsPerPage) {
+                container.innerHTML = `<span class="pagination-info">${totalItems} Einträge</span>`;
+                return;
+            }
+            
+            const startItem = (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+            
+            let html = `<span class="pagination-info">${startItem}-${endItem} von ${totalItems}</span>`;
+            html += '<div class="pagination-buttons">';
+            
+            // Previous button
+            html += `<button class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>←</button>`;
+            
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            if (startPage > 1) {
+                html += `<button class="pagination-btn" onclick="goToPage(1)">1</button>`;
+                if (startPage > 2) html += '<span class="pagination-ellipsis">...</span>';
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += '<span class="pagination-ellipsis">...</span>';
+                html += `<button class="pagination-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+            
+            // Next button
+            html += `<button class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>→</button>`;
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+        
+        function goToPage(page) {
+            const filteredRecords = getFilteredRecords();
+            const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+            
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderOverviewTable();
+            
+            // Scroll to top of table
+            document.querySelector('.overview-table-wrapper').scrollIntoView({ behavior: 'smooth' });
         }
         
         function filterOverviewTable() {
+            currentPage = 1; // Reset to first page on filter
             renderOverviewTable();
         }
         
         function setOverviewFilter(filter) {
             currentOverviewFilter = filter;
+            currentPage = 1; // Reset to first page on filter
             
             // Update filter tab styles
             document.querySelectorAll('.filter-tab').forEach(tab => {
