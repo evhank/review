@@ -1504,9 +1504,9 @@
             originalVerstoesse: 'fldWNwLbjcwmTSXRc',
             erstelltAm: 'fldFjqSLo0vTOFi4g',
             geprueftAm: 'fld5N56RiQDtjnShL',
-            // Neue Felder für Original-Compliance (Field IDs nach Erstellung in Airtable eintragen)
-            originalComplianceStatus: 'fldXXXXXXXXXXXXXX1', // TODO: Field ID eintragen
-            originalComplianceFindings: 'fldXXXXXXXXXXXXXX2' // TODO: Field ID eintragen
+            // Neue Felder für Original-Compliance
+            originalComplianceStatus: 'fldPa5MMvArcEmBrn',
+            originalComplianceFindings: 'fldd4r7GTcegj0ntu'
         };
         
         // ============================================
@@ -1796,11 +1796,12 @@
                 const geprueftAm = fields['Geprüft am'] ? new Date(fields['Geprüft am']).toLocaleDateString('de-DE') : '-';
                 const erstelltAm = fields['Erstellt am'] ? new Date(fields['Erstellt am']).toLocaleDateString('de-DE') : '-';
                 
-                // Try to extract Original-Compliance status from protocol JSON or direct field
+                // Try to extract Original-Compliance status from direct field or protocol JSON
                 let origCompStatus = fields['Original-Compliance-Status'] || '';
                 if (!origCompStatus && fields['Compliance-Protokoll']) {
                     try {
-                        let proto = JSON.parse(fields['Compliance-Protokoll']);
+                        let proto = fields['Compliance-Protokoll'];
+                        if (typeof proto === 'string') proto = JSON.parse(proto);
                         if (proto?.originalTextCompliance?.status) {
                             origCompStatus = proto.originalTextCompliance.status;
                         }
