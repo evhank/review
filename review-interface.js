@@ -263,14 +263,17 @@ function updateOverviewStats() {
     const approved = allRecords.filter(r => r.fields['Status'] === 'Freigegeben').length;
     const revise = allRecords.filter(r => r.fields['Status'] === 'Überarbeiten').length;
     const pending = allRecords.filter(r => r.fields['Status'] === 'Zur Prüfung').length;
-    const internalReview = allRecords.filter(r => r.fields['Status'] === 'interner Review nötig').length;
+    const origCompliance = allRecords.filter(r => 
+        r.fields['Original-Compliance-Status'] === 'Kritisch' || 
+        r.fields['Original-Compliance-Status'] === 'Prüfung empfohlen'
+    ).length;
     
     document.getElementById('statTotal').textContent = total;
     document.getElementById('statLive').textContent = live;
     document.getElementById('statApproved').textContent = approved;
     document.getElementById('statRevise').textContent = revise;
     document.getElementById('statPending').textContent = pending;
-    document.getElementById('statInternalReview').textContent = internalReview;
+    document.getElementById('statOrigCompliance').textContent = origCompliance;
 }
 
 function getFilteredRecords() {
@@ -279,7 +282,15 @@ function getFilteredRecords() {
     
     // Apply status filter
     if (currentOverviewFilter !== 'all') {
-        filteredRecords = filteredRecords.filter(r => r.fields['Status'] === currentOverviewFilter);
+        if (currentOverviewFilter === 'origCompliance') {
+            // Filter by Original-Compliance-Status (Kritisch or Prüfung empfohlen)
+            filteredRecords = filteredRecords.filter(r => 
+                r.fields['Original-Compliance-Status'] === 'Kritisch' || 
+                r.fields['Original-Compliance-Status'] === 'Prüfung empfohlen'
+            );
+        } else {
+            filteredRecords = filteredRecords.filter(r => r.fields['Status'] === currentOverviewFilter);
+        }
     }
     
     // Apply search filter
