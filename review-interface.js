@@ -340,11 +340,12 @@ function renderOverviewTable() {
             } catch(e) {}
         }
         
-        const origCompClass = origCompStatus === 'KRITISCH' ? 'kritisch' : 
-                             origCompStatus === 'PRÜFUNG_EMPFOHLEN' ? 'warnung' : 
-                             origCompStatus === 'OK' ? 'ok' : '';
-        const origCompDisplay = origCompStatus === 'KRITISCH' ? '🚨' : 
-                               origCompStatus === 'PRÜFUNG_EMPFOHLEN' ? '⚠️' : 
+        // Original-Compliance Ampel: OK = grün, Prüfung empfohlen = gelb, Kritisch = rot
+        const origCompClass = origCompStatus === 'Kritisch' ? 'orig-rot' : 
+                             origCompStatus === 'Prüfung empfohlen' ? 'orig-gelb' : 
+                             origCompStatus === 'OK' ? 'orig-gruen' : 'orig-none';
+        const origCompDisplay = origCompStatus === 'Kritisch' ? '✗' : 
+                               origCompStatus === 'Prüfung empfohlen' ? '●' : 
                                origCompStatus === 'OK' ? '✓' : '-';
         
         const statusClass = status === 'Live' ? 'live' :
