@@ -241,6 +241,7 @@
         .stat-card.red .stat-value { color: #ef4444; }
         .stat-card.blue .stat-value { color: #3b82f6; }
         .stat-card.purple .stat-value { color: #8b5cf6; }
+        .stat-card.orange .stat-value { color: #f97316; }
         
         .overview-table-wrapper {
             background: white;
@@ -293,6 +294,7 @@
         .overview-table .status-cell.freigegeben { background: #dcfce7; color: #166534; }
         .overview-table .status-cell.ueberarbeiten { background: #fef3c7; color: #92400e; }
         .overview-table .status-cell.zur-pruefung { background: #dbeafe; color: #1e40af; }
+        .overview-table .status-cell.interner-review { background: #ffedd5; color: #c2410c; }
         
         .overview-table .ampel-cell {
             display: inline-block;
@@ -1426,6 +1428,10 @@
                 <div class="stat-value" id="statPending">-</div>
                 <div class="stat-label">Zur Prüfung</div>
             </div>
+            <div class="stat-card orange">
+                <div class="stat-value" id="statInternalReview">-</div>
+                <div class="stat-label">Int. Review</div>
+            </div>
         </div>
         
         <div class="filter-tabs">
@@ -1434,6 +1440,7 @@
             <button class="filter-tab" onclick="setOverviewFilter('Freigegeben')">Freigegeben</button>
             <button class="filter-tab" onclick="setOverviewFilter('Überarbeiten')">Überarbeiten</button>
             <button class="filter-tab" onclick="setOverviewFilter('Zur Prüfung')">Zur Prüfung</button>
+            <button class="filter-tab" onclick="setOverviewFilter('interner Review nötig')">Int. Review</button>
         </div>
         
         <div class="overview-table-wrapper">
@@ -1722,12 +1729,14 @@
             const approved = allRecords.filter(r => r.fields['Status'] === 'Freigegeben').length;
             const revise = allRecords.filter(r => r.fields['Status'] === 'Überarbeiten').length;
             const pending = allRecords.filter(r => r.fields['Status'] === 'Zur Prüfung').length;
+            const internalReview = allRecords.filter(r => r.fields['Status'] === 'interner Review nötig').length;
             
             document.getElementById('statTotal').textContent = total;
             document.getElementById('statLive').textContent = live;
             document.getElementById('statApproved').textContent = approved;
             document.getElementById('statRevise').textContent = revise;
             document.getElementById('statPending').textContent = pending;
+            document.getElementById('statInternalReview').textContent = internalReview;
         }
         
         function getFilteredRecords() {
@@ -1776,7 +1785,8 @@
                 
                 const statusClass = status === 'Live' ? 'live' :
                                    status === 'Freigegeben' ? 'freigegeben' : 
-                                   status === 'Überarbeiten' ? 'ueberarbeiten' : 'zur-pruefung';
+                                   status === 'Überarbeiten' ? 'ueberarbeiten' : 
+                                   status === 'interner Review nötig' ? 'interner-review' : 'zur-pruefung';
                 const ampelClass = ampel === 'GRÜN' ? 'gruen' : ampel === 'GELB' ? 'gelb' : 'rot';
                 
                 return `
@@ -1927,12 +1937,16 @@
                 statusBadge.textContent = status;
                 statusBadge.style.display = 'inline-block';
                 // Color based on status
-                if (status === 'Freigegeben') {
+                if (status === 'Live') {
+                    statusBadge.style.background = '#8b5cf6';
+                } else if (status === 'Freigegeben') {
                     statusBadge.style.background = '#22c55e';
                 } else if (status === 'Überarbeiten') {
                     statusBadge.style.background = '#f59e0b';
                 } else if (status === 'Zur Prüfung') {
                     statusBadge.style.background = '#3b82f6';
+                } else if (status === 'interner Review nötig') {
+                    statusBadge.style.background = '#f97316';
                 } else {
                     statusBadge.style.background = '#666';
                 }
