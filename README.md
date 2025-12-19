@@ -195,6 +195,14 @@ Neu erstellt
 | Geprüft am | Zeitstempel der Prüfung |
 | Prüfer-Kommentar | Optionaler Kommentar |
 
+### Original-Compliance (NEU)
+| Feld | Beschreibung |
+|------|--------------|
+| Original-Compliance-Status | OK / Prüfung empfohlen / Kritisch |
+| Original-Compliance-Findings | Report der Compliance-Probleme im Originaltext |
+
+Diese Felder dokumentieren Probleme im **Originaltext** (nicht in der Umformatierung) und dienen als Feedback-Schleife zum Compliance-Entscheider.
+
 ---
 
 ## Compliance-Regeln
@@ -217,6 +225,15 @@ Neu erstellt
 - Heilversprechen ("heilt", "behandelt")
 - Medikamentenvergleiche
 - Nicht-autorisierte Claims
+- **Botanicals mit funktionalen Aussagen** (z.B. "Weinlaub für gesunde Venen")
+
+### Botanicals-Erkennung (NEU)
+Pflanzenextrakte haben keine zugelassenen Health Claims. Funktionale Aussagen werden erkannt und dokumentiert:
+- "für gesunde [Körperteil]"
+- "positiver Einfluss auf [Organ]"
+- "unterstützt die [Funktion]"
+
+→ Werden im `Original-Compliance-Findings` Report dokumentiert, aber nicht automatisch korrigiert.
 
 ---
 
