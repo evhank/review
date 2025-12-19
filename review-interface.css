@@ -300,13 +300,32 @@ body {
 .overview-table .ampel-cell.rot { background: #ef4444; }
 
 .overview-table .orig-comp-cell {
-    display: inline-block;
-    font-size: 0.9em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
     cursor: help;
 }
-.overview-table .orig-comp-cell.kritisch { color: #dc2626; }
-.overview-table .orig-comp-cell.warnung { color: #d97706; }
-.overview-table .orig-comp-cell.ok { color: #22c55e; }
+.overview-table .orig-comp-cell.orig-gruen { 
+    color: #fff; 
+    background: #22c55e; 
+}
+.overview-table .orig-comp-cell.orig-gelb { 
+    color: #fff; 
+    background: #eab308; 
+}
+.overview-table .orig-comp-cell.orig-rot { 
+    color: #fff; 
+    background: #ef4444; 
+}
+.overview-table .orig-comp-cell.orig-none { 
+    color: #9ca3af; 
+    background: transparent;
+}
 
 .overview-table .date-cell {
     color: #666;
