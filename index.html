@@ -2070,12 +2070,16 @@
             
             // Check for different JSON formats
             if (protocolData && typeof protocolData === 'object') {
-                // Format 1: Has "ampel" at top level (old format)
-                if (protocolData.ampel) {
+                // Format 1: Has "ampel" at top level (old format with full structure)
+                if (protocolData.ampel && protocolData.efsa) {
                     container.innerHTML = renderProtocolJSON(protocolData, fields);
                 }
-                // Format 2: Has "inhaltstreue" structure (new validator format)
-                else if (protocolData.inhaltstreue || protocolData.health_claims) {
+                // Format 2: Has validator structure (inhaltstreue, health_claims, healthClaimsCheck, contentFidelity)
+                else if (protocolData.inhaltstreue || protocolData.health_claims || protocolData.healthClaimsCheck || protocolData.contentFidelity) {
+                    container.innerHTML = renderNewProtocolFormat(protocolData, fields, ampel);
+                }
+                // Format 3: Has ampel but simpler structure
+                else if (protocolData.ampel) {
                     container.innerHTML = renderNewProtocolFormat(protocolData, fields, ampel);
                 }
                 // Unknown JSON format - render as formatted JSON
@@ -2114,75 +2118,121 @@
                         <span class="status-icon">${ampel === 'GRÜN' ? '✅' : ampel === 'GELB' ? '⚠️' : '❌'}</span>
                         Validierungsergebnis: ${ampel}
                     </div>
+                    ${data.summary ? `<div class="protocol-item">${data.summary}</div>` : ''}
                 </div>
             `;
             
-            // Inhaltstreue
-            if (data.inhaltstreue) {
-                const it = data.inhaltstreue;
-                const statusIcon = it.status === 'OK' ? '✅' : it.status === 'WARNUNG' ? '⚠️' : '❌';
+            // Inhaltstreue / Content Fidelity (support both formats)
+            const contentData = data.inhaltstreue || data.contentFidelity;
+            if (contentData) {
+                const statusIcon = contentData.status === 'OK' ? '✅' : contentData.status === 'WARNUNG' ? '⚠️' : '❌';
+                const problems = contentData.probleme || [];
+                const added = contentData.addedContent || [];
+                const removed = contentData.removedContent || [];
+                const checked = contentData.checkedElements || [];
+                
                 html += `
                     <div class="protocol-section">
                         <div class="protocol-section-title">${statusIcon} Inhaltstreue</div>
-                        ${it.probleme && it.probleme.length > 0 ? `
-                            <div class="protocol-item ${it.status === 'FEHLER' ? 'error' : 'warning'}">
-                                ${it.probleme.map(p => `<div style="margin-bottom:8px;">• ${p}</div>`).join('')}
+                        ${checked.length > 0 ? `
+                            <div class="protocol-item" style="font-size:0.9em;color:#666;">
+                                ${checked.map(c => `<div>✓ ${c}</div>`).join('')}
                             </div>
-                        ` : '<div class="protocol-item success">Keine Probleme gefunden</div>'}
+                        ` : ''}
+                        ${problems.length > 0 ? `
+                            <div class="protocol-item ${contentData.status === 'FEHLER' ? 'error' : 'warning'}">
+                                ${problems.map(p => `<div style="margin-bottom:8px;">• ${p}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${added.length > 0 ? `
+                            <div class="protocol-item warning">
+                                <div style="font-weight:bold;margin-bottom:6px;">⚠️ Hinzugefügt:</div>
+                                ${added.map(a => `<div style="margin-left:12px;">• ${typeof a === 'string' ? a : a.text} ${a.note ? `<span style="color:#666;font-size:0.9em;">(${a.note})</span>` : ''}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${removed.length > 0 ? `
+                            <div class="protocol-item warning">
+                                <div style="font-weight:bold;margin-bottom:6px;">⚠️ Weggelassen:</div>
+                                ${removed.map(r => `<div style="margin-left:12px;">• ${typeof r === 'string' ? r : r.text} ${r.note ? `<span style="color:#666;font-size:0.9em;">(${r.note})</span>` : ''}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${problems.length === 0 && added.length === 0 && removed.length === 0 ? '<div class="protocol-item success">Keine Probleme gefunden</div>' : ''}
                     </div>
                 `;
             }
             
-            // Health Claims
-            if (data.health_claims) {
-                const hc = data.health_claims;
-                const statusIcon = hc.status === 'TEILWEISE KORREKT' || hc.status === 'OK' ? '⚠️' : hc.status === 'FEHLER' ? '❌' : '✅';
+            // Health Claims (support both formats)
+            const hcData = data.health_claims || data.healthClaimsCheck;
+            if (hcData) {
+                const origCount = hcData.original_anzahl ?? hcData.claimsInOriginalCount ?? 0;
+                const newCount = hcData.neuer_text_anzahl ?? hcData.claimsInNewCount ?? 0;
+                const addedCount = hcData.claimsAddedCount ?? (newCount > origCount ? newCount - origCount : 0);
+                const origClaims = hcData.original_claims || hcData.claimsInOriginal || [];
+                const newClaims = hcData.neue_claims || hcData.claimsInNewText || [];
+                const verdict = hcData.anmerkung || hcData.verdict || '';
+                
+                const statusIcon = addedCount > 0 ? '❌' : hcData.status === 'OK' ? '✅' : '⚠️';
+                
                 html += `
                     <div class="protocol-section">
                         <div class="protocol-section-title">${statusIcon} Health Claims</div>
-                        <div class="protocol-item">
-                            <div><strong>Original:</strong> ${hc.original_anzahl || 0} Claims</div>
-                            <div><strong>Neuer Text:</strong> ${hc.neuer_text_anzahl || 0} Claims</div>
-                            ${hc.anmerkung ? `<div style="margin-top:8px;color:#666;font-style:italic;">${hc.anmerkung}</div>` : ''}
+                        <div class="protocol-item ${addedCount > 0 ? 'error' : ''}">
+                            <div><strong>Original:</strong> ${origCount} Claims</div>
+                            <div><strong>Neuer Text:</strong> ${newCount} Claims</div>
+                            ${addedCount > 0 ? `<div style="color:#dc2626;font-weight:bold;margin-top:8px;">⚠️ ${addedCount} Claim(s) hinzugefügt - VERSTOSS!</div>` : ''}
+                            ${verdict ? `<div style="margin-top:8px;color:#666;font-style:italic;">${verdict}</div>` : ''}
                         </div>
-                        ${hc.original_claims && hc.original_claims.length > 0 ? `
+                        ${origClaims.length > 0 ? `
                             <div class="protocol-item" style="margin-top:8px;">
                                 <div style="font-weight:bold;margin-bottom:6px;">Claims im Original:</div>
-                                ${hc.original_claims.map(c => `<div style="margin-left:12px;">• ${c}</div>`).join('')}
+                                ${origClaims.map(c => `<div style="margin-left:12px;font-size:0.9em;">• ${c}</div>`).join('')}
                             </div>
                         ` : ''}
-                        ${hc.neue_claims && hc.neue_claims.length > 0 ? `
+                        ${newClaims.length > 0 ? `
                             <div class="protocol-item" style="margin-top:8px;">
                                 <div style="font-weight:bold;margin-bottom:6px;">Claims im neuen Text:</div>
-                                ${hc.neue_claims.map(c => `<div style="margin-left:12px;">• ${c}</div>`).join('')}
+                                ${newClaims.map(c => `<div style="margin-left:12px;font-size:0.9em;">• ${c}</div>`).join('')}
                             </div>
                         ` : ''}
                     </div>
                 `;
             }
             
-            // Tabellen-Check
-            if (data.tableCheck || data.tabellen_check) {
-                const tc = data.tableCheck || data.tabellen_check;
+            // Tabellen-Check (support both formats)
+            const tcData = data.tableCheck || data.tabellen_check;
+            if (tcData) {
+                const statusIcon = tcData.status === 'OK' ? '✅' : '❌';
                 html += `
                     <div class="protocol-section">
-                        <div class="protocol-section-title">${tc.status === 'OK' ? '✅' : '❌'} Tabellen-Check</div>
+                        <div class="protocol-section-title">${statusIcon} Tabellen-Check</div>
                         <div class="protocol-item">
-                            ${tc.fehler ? `<div class="error">${tc.fehler}</div>` : '<div class="success">Tabelle korrekt übernommen</div>'}
+                            ${tcData.originalRowCount !== undefined ? `<div>Original: ${tcData.originalRowCount} Zeilen</div>` : ''}
+                            ${tcData.newRowCount !== undefined ? `<div>Neu: ${tcData.newRowCount} Zeilen</div>` : ''}
+                            ${tcData.missingRows && tcData.missingRows.length > 0 ? 
+                                `<div class="error" style="margin-top:8px;">Fehlend: ${tcData.missingRows.join(', ')}</div>` : ''}
+                            ${tcData.fehler ? `<div class="error">${tcData.fehler}</div>` : ''}
+                            ${tcData.verdict ? `<div style="margin-top:8px;">${tcData.verdict}</div>` : ''}
+                            ${!tcData.fehler && (!tcData.missingRows || tcData.missingRows.length === 0) ? '<div class="success">Tabelle korrekt übernommen</div>' : ''}
                         </div>
                     </div>
                 `;
             }
             
-            // Warnhinweise
-            if (data.warnhinweise) {
-                const wh = data.warnhinweise;
+            // Warnhinweise (support both formats)
+            const whData = data.warnhinweise || data.warningsCheck;
+            if (whData) {
+                const missing = whData.fehlend || whData.missing || [];
+                const statusIcon = missing.length > 0 ? '❌' : '✅';
                 html += `
                     <div class="protocol-section">
-                        <div class="protocol-section-title">${wh.status === 'OK' ? '✅' : '❌'} Warnhinweise</div>
+                        <div class="protocol-section-title">${statusIcon} Warnhinweise</div>
                         <div class="protocol-item">
-                            ${wh.fehlend && wh.fehlend.length > 0 ? 
-                                `<div class="error">Fehlend: ${wh.fehlend.join(', ')}</div>` : 
+                            ${whData.foundInOriginal && whData.foundInOriginal.length > 0 ? 
+                                `<div style="margin-bottom:8px;"><strong>Im Original:</strong> ${whData.foundInOriginal.join(', ')}</div>` : ''}
+                            ${whData.foundInNew && whData.foundInNew.length > 0 ? 
+                                `<div style="margin-bottom:8px;"><strong>Im neuen Text:</strong> ${whData.foundInNew.join(', ')}</div>` : ''}
+                            ${missing.length > 0 ? 
+                                `<div class="error">Fehlend: ${missing.join(', ')}</div>` : 
                                 '<div class="success">Alle Warnhinweise vorhanden</div>'}
                         </div>
                     </div>
