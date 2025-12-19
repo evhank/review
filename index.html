@@ -307,6 +307,15 @@
         .overview-table .ampel-cell.gelb { background: #eab308; }
         .overview-table .ampel-cell.rot { background: #ef4444; }
         
+        .overview-table .orig-comp-cell {
+            display: inline-block;
+            font-size: 0.9em;
+            cursor: help;
+        }
+        .overview-table .orig-comp-cell.kritisch { color: #dc2626; }
+        .overview-table .orig-comp-cell.warnung { color: #d97706; }
+        .overview-table .orig-comp-cell.ok { color: #22c55e; }
+        
         .overview-table .date-cell {
             color: #666;
             font-size: 0.85em;
@@ -1451,12 +1460,13 @@
                         <th>Produktname</th>
                         <th>Status</th>
                         <th>Ampel</th>
+                        <th>Original</th>
                         <th>Geprüft von</th>
                         <th>Datum</th>
                     </tr>
                 </thead>
                 <tbody id="overviewTableBody">
-                    <tr><td colspan="6" class="no-results">Lade Daten...</td></tr>
+                    <tr><td colspan="7" class="no-results">Lade Daten...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -1493,7 +1503,10 @@
             geprueftVon: 'fldzcLHQwBlIjr66x',
             originalVerstoesse: 'fldWNwLbjcwmTSXRc',
             erstelltAm: 'fldFjqSLo0vTOFi4g',
-            geprueftAm: 'fld5N56RiQDtjnShL'
+            geprueftAm: 'fld5N56RiQDtjnShL',
+            // Neue Felder für Original-Compliance (Field IDs nach Erstellung in Airtable eintragen)
+            originalComplianceStatus: 'fldXXXXXXXXXXXXXX1', // TODO: Field ID eintragen
+            originalComplianceFindings: 'fldXXXXXXXXXXXXXX2' // TODO: Field ID eintragen
         };
         
         // ============================================
@@ -1771,7 +1784,7 @@
             const pageRecords = filteredRecords.slice(startIndex, endIndex);
             
             if (filteredRecords.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="no-results">Keine Ergebnisse gefunden</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="no-results">Keine Ergebnisse gefunden</td></tr>';
                 renderPagination(0, 0);
                 return;
             }
@@ -1782,6 +1795,24 @@
                 const ampel = (fields['Ampel'] || 'GRÜN').toUpperCase();
                 const geprueftAm = fields['Geprüft am'] ? new Date(fields['Geprüft am']).toLocaleDateString('de-DE') : '-';
                 const erstelltAm = fields['Erstellt am'] ? new Date(fields['Erstellt am']).toLocaleDateString('de-DE') : '-';
+                
+                // Try to extract Original-Compliance status from protocol JSON or direct field
+                let origCompStatus = fields['Original-Compliance-Status'] || '';
+                if (!origCompStatus && fields['Compliance-Protokoll']) {
+                    try {
+                        let proto = JSON.parse(fields['Compliance-Protokoll']);
+                        if (proto?.originalTextCompliance?.status) {
+                            origCompStatus = proto.originalTextCompliance.status;
+                        }
+                    } catch(e) {}
+                }
+                
+                const origCompClass = origCompStatus === 'KRITISCH' ? 'kritisch' : 
+                                     origCompStatus === 'PRÜFUNG_EMPFOHLEN' ? 'warnung' : 
+                                     origCompStatus === 'OK' ? 'ok' : '';
+                const origCompDisplay = origCompStatus === 'KRITISCH' ? '🚨' : 
+                                       origCompStatus === 'PRÜFUNG_EMPFOHLEN' ? '⚠️' : 
+                                       origCompStatus === 'OK' ? '✓' : '-';
                 
                 const statusClass = status === 'Live' ? 'live' :
                                    status === 'Freigegeben' ? 'freigegeben' : 
@@ -1795,6 +1826,7 @@
                         <td>${fields['Produkt'] || '-'}</td>
                         <td><span class="status-cell ${statusClass}">${status}</span></td>
                         <td><span class="ampel-cell ${ampelClass}"></span></td>
+                        <td><span class="orig-comp-cell ${origCompClass}" title="${origCompStatus || 'Nicht geprüft'}">${origCompDisplay}</span></td>
                         <td>${fields['Geprüft von'] || '-'}</td>
                         <td class="date-cell">${geprueftAm !== '-' ? geprueftAm : erstelltAm}</td>
                     </tr>
@@ -2235,6 +2267,59 @@
                                 `<div class="error">Fehlend: ${missing.join(', ')}</div>` : 
                                 '<div class="success">Alle Warnhinweise vorhanden</div>'}
                         </div>
+                    </div>
+                `;
+            }
+            
+            // Original-Compliance (Compliance-Probleme im Originaltext)
+            const ocData = data.originalTextCompliance;
+            if (ocData && (ocData.status !== 'OK' || ocData.hasViolations)) {
+                const statusColor = ocData.status === 'KRITISCH' ? '#dc2626' : 
+                                   ocData.status === 'PRÜFUNG_EMPFOHLEN' ? '#d97706' : '#666';
+                const statusBg = ocData.status === 'KRITISCH' ? '#fef2f2' : 
+                                ocData.status === 'PRÜFUNG_EMPFOHLEN' ? '#fffbeb' : '#f9fafb';
+                const statusIcon = ocData.status === 'KRITISCH' ? '🚨' : 
+                                  ocData.status === 'PRÜFUNG_EMPFOHLEN' ? '⚠️' : 'ℹ️';
+                
+                html += `
+                    <div class="protocol-section" style="background:${statusBg};border:2px solid ${statusColor};border-radius:8px;margin-top:15px;">
+                        <div class="protocol-section-title" style="color:${statusColor};">
+                            ${statusIcon} Original-Compliance: ${ocData.status === 'KRITISCH' ? 'Kritisch' : 
+                                                                ocData.status === 'PRÜFUNG_EMPFOHLEN' ? 'Prüfung empfohlen' : 'OK'}
+                        </div>
+                        <div style="font-size:0.85em;color:#666;margin-bottom:10px;">
+                            Hinweis: Dies betrifft den <strong>Originaltext</strong>, nicht die Umformatierung.
+                        </div>
+                        ${ocData.shortReport ? `
+                            <div class="protocol-item" style="white-space:pre-line;font-size:0.9em;">
+                                ${ocData.shortReport}
+                            </div>
+                        ` : ''}
+                        ${ocData.botanicalsWithClaims && ocData.botanicalsWithClaims.length > 0 ? `
+                            <div class="protocol-item" style="margin-top:10px;">
+                                <div style="font-weight:bold;color:${statusColor};margin-bottom:6px;">🌿 Botanicals mit Wirkaussagen:</div>
+                                ${ocData.botanicalsWithClaims.map(b => `
+                                    <div style="margin-left:12px;margin-bottom:8px;padding:8px;background:white;border-radius:4px;">
+                                        <strong>${b.botanical}:</strong> "${b.claim}"
+                                        ${b.fullQuote ? `<div style="font-size:0.85em;color:#666;margin-top:4px;">→ "${b.fullQuote}"</div>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        ${ocData.violations && ocData.violations.length > 0 ? `
+                            <div class="protocol-item" style="margin-top:10px;">
+                                <div style="font-weight:bold;margin-bottom:6px;">Weitere Findings:</div>
+                                ${ocData.violations.slice(0, 5).map(v => `
+                                    <div style="margin-left:12px;margin-bottom:6px;">
+                                        <span style="color:${v.severity === 'schwer' ? '#dc2626' : v.severity === 'mittel' ? '#d97706' : '#666'};">
+                                            [${v.severity}]
+                                        </span>
+                                        ${v.type}: "${v.text}"
+                                    </div>
+                                `).join('')}
+                                ${ocData.violations.length > 5 ? `<div style="color:#666;font-size:0.85em;">... und ${ocData.violations.length - 5} weitere</div>` : ''}
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             }
