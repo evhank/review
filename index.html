@@ -1958,7 +1958,9 @@
                     </div>
                 `;
             } else {
-                document.getElementById('previewContent').innerHTML = newText || '<p style="color:#999;text-align:center;">Kein neuer Text</p>';
+                // Build meta content section
+                const metaHtml = renderMetaContent(fields);
+                document.getElementById('previewContent').innerHTML = (newText || '<p style="color:#999;text-align:center;">Kein neuer Text</p>') + metaHtml;
             }
             
             // Compliance Protocol
@@ -1969,6 +1971,54 @@
             
             // Show reviewer name
             document.getElementById('reviewerNameDisplay').textContent = reviewerName || '-';
+        }
+        
+        function renderMetaContent(fields) {
+            const metaTitle = fields['Meta-Title'] || '';
+            const metaDesc = fields['Meta-Description'] || '';
+            const keywords = fields['Keywords'] || '';
+            const shortDesc = fields['Short-Description'] || '';
+            
+            if (!metaTitle && !metaDesc && !keywords && !shortDesc) {
+                return '';
+            }
+            
+            return `
+                <div style="margin-top:30px;padding-top:20px;border-top:2px solid #e0e0e0;">
+                    <h3 style="color:#333;font-size:1em;margin-bottom:15px;display:flex;align-items:center;gap:8px;">
+                        <span style="background:#a0ba32;color:white;padding:2px 8px;border-radius:6px;font-size:0.8em;">SEO</span>
+                        Meta-Inhalte
+                    </h3>
+                    
+                    ${metaTitle ? `
+                    <div style="margin-bottom:12px;background:#f9f9f9;padding:10px 12px;border-radius:6px;border-left:3px solid #a0ba32;">
+                        <div style="font-size:0.75em;color:#666;margin-bottom:4px;">Meta-Title <span style="color:${metaTitle.length <= 60 ? '#22c55e' : '#ef4444'};">(${metaTitle.length}/60)</span></div>
+                        <div style="font-size:0.9em;color:#333;">${metaTitle}</div>
+                    </div>
+                    ` : ''}
+                    
+                    ${metaDesc ? `
+                    <div style="margin-bottom:12px;background:#f9f9f9;padding:10px 12px;border-radius:6px;border-left:3px solid #a0ba32;">
+                        <div style="font-size:0.75em;color:#666;margin-bottom:4px;">Meta-Description <span style="color:${metaDesc.length <= 155 ? '#22c55e' : '#ef4444'};">(${metaDesc.length}/155)</span></div>
+                        <div style="font-size:0.9em;color:#333;">${metaDesc}</div>
+                    </div>
+                    ` : ''}
+                    
+                    ${keywords ? `
+                    <div style="margin-bottom:12px;background:#f9f9f9;padding:10px 12px;border-radius:6px;border-left:3px solid #a0ba32;">
+                        <div style="font-size:0.75em;color:#666;margin-bottom:4px;">Keywords <span style="color:#666;">(${keywords.split(',').filter(k => k.trim()).length} Stück)</span></div>
+                        <div style="font-size:0.85em;color:#333;font-family:monospace;">${keywords}</div>
+                    </div>
+                    ` : ''}
+                    
+                    ${shortDesc ? `
+                    <div style="margin-bottom:12px;background:#f9f9f9;padding:10px 12px;border-radius:6px;border-left:3px solid #a0ba32;">
+                        <div style="font-size:0.75em;color:#666;margin-bottom:4px;">Short-Description <span style="color:${shortDesc.length <= 160 ? '#22c55e' : '#ef4444'};">(${shortDesc.length}/160)</span></div>
+                        <div style="font-size:0.9em;color:#333;">${shortDesc}</div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
         }
         
         function renderProtocol(fields) {
@@ -2004,14 +2054,177 @@
                 console.log('Protocol parse error:', e);
             }
             
-            if (protocolData && typeof protocolData === 'object' && protocolData.ampel) {
-                container.innerHTML = renderProtocolJSON(protocolData, fields);
+            // Check for different JSON formats
+            if (protocolData && typeof protocolData === 'object') {
+                // Format 1: Has "ampel" at top level (old format)
+                if (protocolData.ampel) {
+                    container.innerHTML = renderProtocolJSON(protocolData, fields);
+                }
+                // Format 2: Has "inhaltstreue" structure (new validator format)
+                else if (protocolData.inhaltstreue || protocolData.health_claims) {
+                    container.innerHTML = renderNewProtocolFormat(protocolData, fields, ampel);
+                }
+                // Unknown JSON format - render as formatted JSON
+                else {
+                    container.innerHTML = renderUnknownJSON(protocolData, fields, ampel);
+                }
             } else if (protokoll) {
                 container.innerHTML = `<div class="protocol-item">${protokoll.replace(/\n/g, '<br>')}</div>`;
             } else {
                 // Generate basic protocol from available data
                 container.innerHTML = renderBasicProtocol(fields, ampel);
             }
+        }
+        
+        function renderNewProtocolFormat(data, fields, ampel) {
+            let html = '';
+            
+            // Review Metadata (show in browse mode or when reviewed)
+            if (fields['Geprüft von'] || fields['Geprüft am']) {
+                html += `
+                    <div class="protocol-section" style="background:#e8f4ea;border-radius:8px;padding:12px;margin-bottom:15px;">
+                        <div style="display:flex;gap:20px;font-size:0.9em;">
+                            ${fields['Geprüft von'] ? `<span>👤 <strong>${fields['Geprüft von']}</strong></span>` : ''}
+                            ${fields['Geprüft am'] ? `<span>📅 ${new Date(fields['Geprüft am']).toLocaleString('de-DE')}</span>` : ''}
+                            ${fields['Status'] ? `<span>📋 ${fields['Status']}</span>` : ''}
+                        </div>
+                        ${fields['Prüfer-Kommentar'] ? `<div style="margin-top:8px;font-style:italic;color:#666;">"${fields['Prüfer-Kommentar']}"</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            // Status Summary
+            html += `
+                <div class="protocol-section">
+                    <div class="protocol-section-title">
+                        <span class="status-icon">${ampel === 'GRÜN' ? '✅' : ampel === 'GELB' ? '⚠️' : '❌'}</span>
+                        Validierungsergebnis: ${ampel}
+                    </div>
+                </div>
+            `;
+            
+            // Inhaltstreue
+            if (data.inhaltstreue) {
+                const it = data.inhaltstreue;
+                const statusIcon = it.status === 'OK' ? '✅' : it.status === 'WARNUNG' ? '⚠️' : '❌';
+                html += `
+                    <div class="protocol-section">
+                        <div class="protocol-section-title">${statusIcon} Inhaltstreue</div>
+                        ${it.probleme && it.probleme.length > 0 ? `
+                            <div class="protocol-item ${it.status === 'FEHLER' ? 'error' : 'warning'}">
+                                ${it.probleme.map(p => `<div style="margin-bottom:8px;">• ${p}</div>`).join('')}
+                            </div>
+                        ` : '<div class="protocol-item success">Keine Probleme gefunden</div>'}
+                    </div>
+                `;
+            }
+            
+            // Health Claims
+            if (data.health_claims) {
+                const hc = data.health_claims;
+                const statusIcon = hc.status === 'TEILWEISE KORREKT' || hc.status === 'OK' ? '⚠️' : hc.status === 'FEHLER' ? '❌' : '✅';
+                html += `
+                    <div class="protocol-section">
+                        <div class="protocol-section-title">${statusIcon} Health Claims</div>
+                        <div class="protocol-item">
+                            <div><strong>Original:</strong> ${hc.original_anzahl || 0} Claims</div>
+                            <div><strong>Neuer Text:</strong> ${hc.neuer_text_anzahl || 0} Claims</div>
+                            ${hc.anmerkung ? `<div style="margin-top:8px;color:#666;font-style:italic;">${hc.anmerkung}</div>` : ''}
+                        </div>
+                        ${hc.original_claims && hc.original_claims.length > 0 ? `
+                            <div class="protocol-item" style="margin-top:8px;">
+                                <div style="font-weight:bold;margin-bottom:6px;">Claims im Original:</div>
+                                ${hc.original_claims.map(c => `<div style="margin-left:12px;">• ${c}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${hc.neue_claims && hc.neue_claims.length > 0 ? `
+                            <div class="protocol-item" style="margin-top:8px;">
+                                <div style="font-weight:bold;margin-bottom:6px;">Claims im neuen Text:</div>
+                                ${hc.neue_claims.map(c => `<div style="margin-left:12px;">• ${c}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            // Tabellen-Check
+            if (data.tableCheck || data.tabellen_check) {
+                const tc = data.tableCheck || data.tabellen_check;
+                html += `
+                    <div class="protocol-section">
+                        <div class="protocol-section-title">${tc.status === 'OK' ? '✅' : '❌'} Tabellen-Check</div>
+                        <div class="protocol-item">
+                            ${tc.fehler ? `<div class="error">${tc.fehler}</div>` : '<div class="success">Tabelle korrekt übernommen</div>'}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Warnhinweise
+            if (data.warnhinweise) {
+                const wh = data.warnhinweise;
+                html += `
+                    <div class="protocol-section">
+                        <div class="protocol-section-title">${wh.status === 'OK' ? '✅' : '❌'} Warnhinweise</div>
+                        <div class="protocol-item">
+                            ${wh.fehlend && wh.fehlend.length > 0 ? 
+                                `<div class="error">Fehlend: ${wh.fehlend.join(', ')}</div>` : 
+                                '<div class="success">Alle Warnhinweise vorhanden</div>'}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+        
+        function renderUnknownJSON(data, fields, ampel) {
+            let html = '';
+            
+            // Review Metadata
+            if (fields['Geprüft von'] || fields['Geprüft am']) {
+                html += `
+                    <div class="protocol-section" style="background:#e8f4ea;border-radius:8px;padding:12px;margin-bottom:15px;">
+                        <div style="display:flex;gap:20px;font-size:0.9em;">
+                            ${fields['Geprüft von'] ? `<span>👤 <strong>${fields['Geprüft von']}</strong></span>` : ''}
+                            ${fields['Geprüft am'] ? `<span>📅 ${new Date(fields['Geprüft am']).toLocaleString('de-DE')}</span>` : ''}
+                            ${fields['Status'] ? `<span>📋 ${fields['Status']}</span>` : ''}
+                        </div>
+                        ${fields['Prüfer-Kommentar'] ? `<div style="margin-top:8px;font-style:italic;color:#666;">"${fields['Prüfer-Kommentar']}"</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            // Status
+            html += `
+                <div class="protocol-section">
+                    <div class="protocol-section-title">
+                        <span class="status-icon">${ampel === 'GRÜN' ? '✅' : ampel === 'GELB' ? '⚠️' : '❌'}</span>
+                        Status: ${ampel}
+                    </div>
+                </div>
+            `;
+            
+            // Render each key in the JSON
+            for (const [key, value] of Object.entries(data)) {
+                if (typeof value === 'object' && value !== null) {
+                    html += `
+                        <div class="protocol-section">
+                            <div class="protocol-section-title">${key}</div>
+                            <div class="protocol-item" style="font-family:monospace;font-size:0.85em;white-space:pre-wrap;">${JSON.stringify(value, null, 2)}</div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="protocol-section">
+                            <div class="protocol-section-title">${key}</div>
+                            <div class="protocol-item">${value}</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            return html;
         }
         
         function renderProtocolJSON(data, fields) {
@@ -2092,44 +2305,6 @@
                 `;
             }
             
-            // Meta-Inhalte (Texte zum Abgleich)
-            const metaTitle = fields['Meta-Title'] || '';
-            const metaDesc = fields['Meta-Description'] || '';
-            const keywords = fields['Keywords'] || '';
-            const shortDesc = fields['Short-Description'] || '';
-            
-            if (metaTitle || metaDesc || keywords || shortDesc) {
-                html += `
-                    <div class="protocol-section">
-                        <div class="protocol-section-title">Meta-Inhalte</div>
-                        ${metaTitle ? `
-                            <div class="meta-field">
-                                <div class="meta-label">Meta-Title:</div>
-                                <div class="meta-value">${metaTitle}</div>
-                            </div>
-                        ` : ''}
-                        ${metaDesc ? `
-                            <div class="meta-field">
-                                <div class="meta-label">Meta-Description:</div>
-                                <div class="meta-value">${metaDesc}</div>
-                            </div>
-                        ` : ''}
-                        ${keywords ? `
-                            <div class="meta-field">
-                                <div class="meta-label">Keywords:</div>
-                                <div class="meta-value keywords">${keywords}</div>
-                            </div>
-                        ` : ''}
-                        ${shortDesc ? `
-                            <div class="meta-field">
-                                <div class="meta-label">Short-Description:</div>
-                                <div class="meta-value">${shortDesc}</div>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }
-            
             // FAQs
             if (data.faq && data.faq.length > 0) {
                 html += `
@@ -2149,69 +2324,35 @@
         }
         
         function renderBasicProtocol(fields, ampel) {
-            const metaTitle = fields['Meta-Title'] || '';
-            const metaDesc = fields['Meta-Description'] || '';
-            const keywords = fields['Keywords'] || '';
-            const shortDesc = fields['Short-Description'] || '';
+            let html = '';
             
-            return `
+            // Review Metadata (show in browse mode or when reviewed)
+            if (fields['Geprüft von'] || fields['Geprüft am']) {
+                html += `
+                    <div class="protocol-section" style="background:#e8f4ea;border-radius:8px;padding:12px;margin-bottom:15px;">
+                        <div style="display:flex;gap:20px;font-size:0.9em;">
+                            ${fields['Geprüft von'] ? `<span>👤 <strong>${fields['Geprüft von']}</strong></span>` : ''}
+                            ${fields['Geprüft am'] ? `<span>📅 ${new Date(fields['Geprüft am']).toLocaleString('de-DE')}</span>` : ''}
+                            ${fields['Status'] ? `<span>📋 ${fields['Status']}</span>` : ''}
+                        </div>
+                        ${fields['Prüfer-Kommentar'] ? `<div style="margin-top:8px;font-style:italic;color:#666;">"${fields['Prüfer-Kommentar']}"</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            html += `
                 <div class="protocol-section">
                     <div class="protocol-section-title">
                         <span class="status-icon">${ampel === 'GRÜN' ? '✅' : ampel === 'GELB' ? '⚠️' : '❌'}</span>
                         Status: ${ampel}
                     </div>
-                </div>
-                
-                <div class="protocol-section">
-                    <div class="protocol-section-title">SEO-Daten</div>
-                    <div class="seo-grid">
-                        <div class="seo-item">
-                            <span class="label">Meta-Title</span>
-                            <span class="value ${metaTitle.length <= 60 ? 'ok' : 'warning'}">${metaTitle.length}/60</span>
-                        </div>
-                        <div class="seo-item">
-                            <span class="label">Meta-Desc</span>
-                            <span class="value ${metaDesc.length <= 155 ? 'ok' : 'warning'}">${metaDesc.length}/155</span>
-                        </div>
-                        <div class="seo-item">
-                            <span class="label">Keywords</span>
-                            <span class="value">${keywords.split(',').filter(k => k.trim()).length} Stück</span>
-                        </div>
-                        <div class="seo-item">
-                            <span class="label">Short-Desc</span>
-                            <span class="value ${shortDesc.length <= 160 ? 'ok' : 'warning'}">${shortDesc.length}/160</span>
-                        </div>
+                    <div class="protocol-item">
+                        Kein detailliertes Compliance-Protokoll vorhanden.
                     </div>
                 </div>
-                
-                ${metaTitle ? `
-                <div class="protocol-section">
-                    <div class="protocol-section-title">Meta-Title</div>
-                    <div class="protocol-item">${metaTitle}</div>
-                </div>
-                ` : ''}
-                
-                ${metaDesc ? `
-                <div class="protocol-section">
-                    <div class="protocol-section-title">Meta-Description</div>
-                    <div class="protocol-item">${metaDesc}</div>
-                </div>
-                ` : ''}
-                
-                ${keywords ? `
-                <div class="protocol-section">
-                    <div class="protocol-section-title">Keywords</div>
-                    <div class="protocol-item" style="font-family:monospace;font-size:12px;">${keywords}</div>
-                </div>
-                ` : ''}
-                
-                ${shortDesc ? `
-                <div class="protocol-section">
-                    <div class="protocol-section-title">Short-Description</div>
-                    <div class="protocol-item">${shortDesc}</div>
-                </div>
-                ` : ''}
             `;
+            
+            return html;
         }
         
         // ============================================
@@ -2333,7 +2474,8 @@
             
             document.getElementById('mainApp').innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);color:#fff;text-align:center;padding:40px;">
-                    <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" style="height:50px;margin-bottom:30px;opacity:0.8;">
+                    <img src="https://energiavital.de/media/51/95/d5/1751886601/ev_logo_du.png?ts=1761581030" alt="energiavital" style="height:50px;margin-bottom:8px;filter:brightness(0) invert(1);">
+                    <div style="font-size:0.7em;font-weight:600;color:#a0ba32;letter-spacing:0.5px;margin-bottom:30px;text-transform:uppercase;">Compliance Reviewer</div>
                     <p style="font-size:1.3em;color:#888;margin-bottom:30px;">${title}</p>
                     <div style="display:flex;gap:15px;margin-bottom:30px;flex-wrap:wrap;justify-content:center;">
                         <button onclick="window.location.reload()" style="background:#a0ba32;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.2s;">
