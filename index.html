@@ -2125,6 +2125,77 @@
                 // Generate basic protocol from available data
                 container.innerHTML = renderBasicProtocol(fields, ampel);
             }
+            
+            // Always append Original Compliance Check section from Airtable fields
+            container.innerHTML += renderOriginalComplianceCheck(fields);
+        }
+        
+        function renderOriginalComplianceCheck(fields) {
+            const status = fields['Original-Compliance-Status'] || '';
+            const verstoesse = fields['Original-Verstöße'] || '';
+            const findings = fields['Original-Compliance-Findings'] || '';
+            
+            // Skip if no data
+            if (!status && !verstoesse && !findings) {
+                return '';
+            }
+            
+            const statusColor = status === 'Kritisch' ? '#dc2626' : 
+                               status === 'Prüfung empfohlen' ? '#d97706' : '#22c55e';
+            const statusBg = status === 'Kritisch' ? '#fef2f2' : 
+                            status === 'Prüfung empfohlen' ? '#fffbeb' : '#f0fdf4';
+            const statusIcon = status === 'Kritisch' ? '🚨' : 
+                              status === 'Prüfung empfohlen' ? '⚠️' : '✅';
+            
+            let html = `
+                <div class="protocol-section" style="background:${statusBg};border:2px solid ${statusColor};border-radius:8px;margin-top:20px;padding:15px;">
+                    <div class="protocol-section-title" style="color:${statusColor};font-size:1.1em;margin-bottom:12px;">
+                        ${statusIcon} Original Compliance Check
+                    </div>
+                    <div style="font-size:0.85em;color:#666;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid ${statusColor}33;">
+                        Compliance-Prüfung des <strong>Originaltexts</strong> (nicht der Umformatierung)
+                    </div>
+            `;
+            
+            // Status
+            if (status) {
+                html += `
+                    <div style="margin-bottom:10px;">
+                        <div style="font-weight:600;color:#374151;margin-bottom:4px;">Status</div>
+                        <div style="display:inline-block;padding:4px 12px;border-radius:4px;background:${statusColor};color:white;font-weight:500;">
+                            ${status}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Original-Verstöße (Kategorien)
+            if (verstoesse) {
+                html += `
+                    <div style="margin-bottom:10px;">
+                        <div style="font-weight:600;color:#374151;margin-bottom:4px;">Verstoß-Kategorien</div>
+                        <div style="color:#666;font-size:0.95em;">
+                            ${verstoesse.split(',').map(v => `<span style="display:inline-block;background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:3px;margin:2px 4px 2px 0;font-size:0.85em;">${v.trim()}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Findings (ausführlicher Report)
+            if (findings) {
+                html += `
+                    <div style="margin-bottom:5px;">
+                        <div style="font-weight:600;color:#374151;margin-bottom:4px;">Detaillierte Findings</div>
+                        <div style="background:white;border:1px solid #e5e7eb;border-radius:6px;padding:12px;font-size:0.9em;color:#4b5563;white-space:pre-line;line-height:1.5;">
+                            ${findings}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += `</div>`;
+            
+            return html;
         }
         
         function renderNewProtocolFormat(data, fields, ampel) {
@@ -2350,24 +2421,51 @@
                 <div class="protocol-section">
                     <div class="protocol-section-title">
                         <span class="status-icon">${ampel === 'GRÜN' ? '✅' : ampel === 'GELB' ? '⚠️' : '❌'}</span>
-                        Status: ${ampel}
+                        Validierungsergebnis: ${ampel}
                     </div>
                 </div>
             `;
             
-            // Render each key in the JSON
+            // Check for minimal/legacy format and show helpful message
+            const dataKeys = Object.keys(data);
+            const isMinimalFormat = dataKeys.length <= 3 && (data.valid !== undefined || data.ampel !== undefined);
+            
+            if (isMinimalFormat) {
+                html += `
+                    <div class="protocol-section" style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px;margin:15px 0;">
+                        <div style="color:#92400e;font-weight:bold;margin-bottom:8px;">⚠️ Minimales Protokoll-Format</div>
+                        <div style="color:#78716c;font-size:0.9em;">
+                            Dieser Datensatz wurde mit einer älteren Workflow-Version erstellt.<br>
+                            Für detaillierte Compliance-Prüfung den Workflow erneut ausführen.
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Render each key in the JSON with better formatting
             for (const [key, value] of Object.entries(data)) {
+                // Skip internal/technical keys
+                if (key === 'valid' && isMinimalFormat) continue;
+                
+                const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                
                 if (typeof value === 'object' && value !== null) {
                     html += `
                         <div class="protocol-section">
-                            <div class="protocol-section-title">${key}</div>
-                            <div class="protocol-item" style="font-family:monospace;font-size:0.85em;white-space:pre-wrap;">${JSON.stringify(value, null, 2)}</div>
+                            <div class="protocol-section-title">${displayKey}</div>
+                            <div class="protocol-item" style="font-family:monospace;font-size:0.85em;white-space:pre-wrap;background:#f8f8f8;padding:10px;border-radius:4px;">${JSON.stringify(value, null, 2)}</div>
                         </div>
                     `;
-                } else {
+                } else if (typeof value === 'boolean') {
                     html += `
                         <div class="protocol-section">
-                            <div class="protocol-section-title">${key}</div>
+                            <div class="protocol-section-title">${value ? '✅' : '❌'} ${displayKey}</div>
+                        </div>
+                    `;
+                } else if (value !== null && value !== undefined && value !== '') {
+                    html += `
+                        <div class="protocol-section">
+                            <div class="protocol-section-title">${displayKey}</div>
                             <div class="protocol-item">${value}</div>
                         </div>
                     `;
