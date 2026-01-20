@@ -743,7 +743,7 @@ function selectFeedbackProduct(recordId) {
                 <div class="feedback-section-header">Compliance-Report</div>
                 <div class="feedback-compliance-report">
                     <div class="compliance-status ${statusClass}">${escapeHtml(complianceStatus)}</div>
-                    <div class="compliance-findings">${escapeHtml(complianceFindings)}</div>
+                    <div class="compliance-findings">${formatComplianceReport(complianceFindings)}</div>
                 </div>
                 ${feedbackSection}
             </div>
@@ -754,6 +754,88 @@ function selectFeedbackProduct(recordId) {
 function formatText(command) {
     document.execCommand(command, false, null);
     document.getElementById('feedbackEditor').focus();
+}
+
+function formatComplianceReport(data) {
+    // Try to parse as JSON
+    let report;
+    try {
+        report = typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (e) {
+        // Not JSON, return as escaped text
+        return escapeHtml(data);
+    }
+
+    if (!report || typeof report !== 'object') {
+        return escapeHtml(data);
+    }
+
+    let html = '';
+
+    // Summary section
+    if (report.summary) {
+        html += `<div class="report-summary">${escapeHtml(report.summary)}</div>`;
+    }
+
+    if (report.recommendation) {
+        html += `<div class="report-recommendation"><strong>Empfehlung:</strong> ${escapeHtml(report.recommendation)}</div>`;
+    }
+
+    // Health Claims Check
+    if (report.healthClaimsCheck && report.healthClaimsCheck.status !== 'OK') {
+        html += `<div class="report-section">
+            <div class="report-section-title ${report.healthClaimsCheck.status === 'FEHLER' ? 'error' : 'warning'}">Health Claims: ${report.healthClaimsCheck.status}</div>
+            <div class="report-section-content">${escapeHtml(report.healthClaimsCheck.verdict || '')}</div>
+        </div>`;
+    }
+
+    // Content Fidelity
+    if (report.contentFidelity && report.contentFidelity.addedContent && report.contentFidelity.addedContent.length > 0) {
+        const criticalAdded = report.contentFidelity.addedContent.filter(c => c.severity === 'kritisch');
+        if (criticalAdded.length > 0) {
+            html += `<div class="report-section">
+                <div class="report-section-title error">Kritische Änderungen</div>
+                ${criticalAdded.map(c => `<div class="report-item"><strong>${escapeHtml(c.text)}</strong><br><em>${escapeHtml(c.note || '')}</em></div>`).join('')}
+            </div>`;
+        }
+    }
+
+    // Original Text Compliance Issues
+    if (report.originalTextCompliance && report.originalTextCompliance.violations && report.originalTextCompliance.violations.length > 0) {
+        html += `<div class="report-section">
+            <div class="report-section-title error">Verstöße im Originaltext</div>
+            ${report.originalTextCompliance.violations.slice(0, 5).map(v =>
+                `<div class="report-item">
+                    <span class="violation-type">${escapeHtml(v.type)}</span>
+                    <div class="violation-text">"${escapeHtml(v.text)}"</div>
+                    <div class="violation-reason">${escapeHtml(v.reason)}</div>
+                </div>`
+            ).join('')}
+        </div>`;
+    }
+
+    // Legal Notice Errors
+    if (report.legalNotice && report.legalNotice.errors && report.legalNotice.errors.length > 0) {
+        html += `<div class="report-section">
+            <div class="report-section-title warning">Rechtliche Hinweise</div>
+            ${report.legalNotice.errors.map(e => `<div class="report-item">${escapeHtml(e)}</div>`).join('')}
+        </div>`;
+    }
+
+    // FAQ (first 2)
+    if (report.faq && report.faq.length > 0) {
+        html += `<div class="report-section">
+            <div class="report-section-title">Häufige Fragen</div>
+            ${report.faq.slice(0, 2).map(f =>
+                `<div class="report-faq">
+                    <div class="faq-question">${escapeHtml(f.question)}</div>
+                    <div class="faq-answer">${escapeHtml(f.answer)}</div>
+                </div>`
+            ).join('')}
+        </div>`;
+    }
+
+    return html || escapeHtml(data);
 }
 
 async function submitFeedback() {
