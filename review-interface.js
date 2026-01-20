@@ -501,6 +501,7 @@ async function updateRecord(recordId, fields) {
 
 let feedbackRecords = [];
 let currentFeedbackType = 'original'; // 'original' or 'webshop'
+let currentFeedbackFilter = 'offen'; // 'all', 'kritisch', 'pruefung', 'offen', 'erledigt'
 let selectedFeedbackRecord = null;
 
 async function loadFeedbackData() {
@@ -534,6 +535,7 @@ async function loadFeedbackData() {
 
 function setFeedbackType(type) {
     currentFeedbackType = type;
+    currentFeedbackFilter = 'offen'; // Reset filter when switching type
     document.getElementById('feedbackTypeOriginal').classList.toggle('active', type === 'original');
     document.getElementById('feedbackTypeWebshop').classList.toggle('active', type === 'webshop');
 
@@ -541,6 +543,10 @@ function setFeedbackType(type) {
     selectedFeedbackRecord = null;
     document.getElementById('feedbackDetailPanel').innerHTML =
         '<div class="feedback-detail-empty"><p>Wähle ein Produkt aus der Liste, um Details anzuzeigen und Feedback zu geben.</p></div>';
+
+    // Reset stat card active states
+    document.querySelectorAll('.feedback-stats .stat-card').forEach(card => card.classList.remove('active'));
+    document.querySelectorAll('.feedback-stats .stat-card')[2]?.classList.add('active'); // 'Offen' is index 2
 
     updateFeedbackStats();
     renderFeedbackList();
@@ -582,20 +588,59 @@ function updateFeedbackStats() {
     document.getElementById('feedbackStatErledigt').textContent = erledigt;
 }
 
+function setFeedbackFilter(filter) {
+    currentFeedbackFilter = filter;
+
+    // Update active state on stat cards
+    document.querySelectorAll('.feedback-stats .stat-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    const filterMap = { 'kritisch': 0, 'pruefung': 1, 'offen': 2, 'erledigt': 3 };
+    if (filterMap[filter] !== undefined) {
+        document.querySelectorAll('.feedback-stats .stat-card')[filterMap[filter]]?.classList.add('active');
+    }
+
+    // Reset selection
+    selectedFeedbackRecord = null;
+    document.getElementById('feedbackDetailPanel').innerHTML =
+        '<div class="feedback-detail-empty"><p>Wähle ein Produkt aus der Liste, um Details anzuzeigen.</p></div>';
+
+    renderFeedbackList();
+}
+
 function getFilteredFeedbackRecords() {
     const searchTerm = document.getElementById('feedbackSearchInput').value.toLowerCase();
+    const feedbackField = currentFeedbackType === 'original' ? 'Feedback Originaltext' : 'Feedback Webshop';
 
-    let filtered;
+    let filtered = feedbackRecords;
 
     if (currentFeedbackType === 'original') {
-        // Filter: Original-Compliance-Status is 'Kritisch' or 'Prüfung empfohlen'
-        filtered = feedbackRecords.filter(r => {
+        // Base filter: Original-Compliance-Status is 'Kritisch' or 'Prüfung empfohlen'
+        filtered = filtered.filter(r => {
             const status = r.fields['Original-Compliance-Status'];
             return status === 'Kritisch' || status === 'Prüfung empfohlen';
         });
+
+        // Apply specific filter
+        if (currentFeedbackFilter === 'kritisch') {
+            filtered = filtered.filter(r => r.fields['Original-Compliance-Status'] === 'Kritisch' && !r.fields[feedbackField]);
+        } else if (currentFeedbackFilter === 'pruefung') {
+            filtered = filtered.filter(r => r.fields['Original-Compliance-Status'] === 'Prüfung empfohlen' && !r.fields[feedbackField]);
+        } else if (currentFeedbackFilter === 'offen') {
+            filtered = filtered.filter(r => !r.fields[feedbackField]);
+        } else if (currentFeedbackFilter === 'erledigt') {
+            filtered = filtered.filter(r => r.fields[feedbackField]);
+        }
     } else {
         // Webshop: Status is 'Überarbeiten'
-        filtered = feedbackRecords.filter(r => r.fields['Status'] === 'Überarbeiten');
+        filtered = filtered.filter(r => r.fields['Status'] === 'Überarbeiten');
+
+        // Apply specific filter
+        if (currentFeedbackFilter === 'offen') {
+            filtered = filtered.filter(r => !r.fields[feedbackField]);
+        } else if (currentFeedbackFilter === 'erledigt') {
+            filtered = filtered.filter(r => r.fields[feedbackField]);
+        }
     }
 
     // Apply search
@@ -701,7 +746,7 @@ function selectFeedbackProduct(recordId) {
             <div class="feedback-already-submitted">
                 <div class="checkmark">✓</div>
                 <div class="message">Feedback wurde bereits gesendet</div>
-                <div class="submitted-text">${escapeHtml(existingFeedback)}</div>
+                <div class="submitted-text">${sanitizeHtml(existingFeedback)}</div>
             </div>
         `;
     } else {

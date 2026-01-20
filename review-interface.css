@@ -235,6 +235,21 @@ body {
 .stat-card.purple .stat-value { color: #8b5cf6; }
 .stat-card.orange .stat-value { color: #f97316; }
 
+.stat-card.clickable {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.stat-card.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.stat-card.clickable.active {
+    outline: 3px solid #a0ba32;
+    outline-offset: 2px;
+}
+
 .overview-table-wrapper {
     background: white;
     border-radius: 12px;
