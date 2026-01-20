@@ -87,7 +87,7 @@ async function init() {
         let title = 'Produkttext Review';
         if (modeParam === 'browse') title = 'Produkttext Browse (Alle)';
         if (modeParam === 'overview') title = 'Produkttext Übersicht';
-        if (modeParam === 'feedback') title = 'Feedback an Compliance';
+        if (modeParam === 'feedback') title = 'Feedback der Compliance-Entscheider';
         document.querySelector('.header h1').textContent = title;
     }
 
@@ -218,7 +218,7 @@ function switchMode(mode) {
     let title = 'Produkttext Review';
     if (mode === 'browse') title = 'Produkttext Browse (Alle)';
     if (mode === 'overview') title = 'Produkttext Übersicht';
-    if (mode === 'feedback') title = 'Feedback an Compliance';
+    if (mode === 'feedback') title = 'Feedback der Compliance-Entscheider';
     document.querySelector('.header h1').textContent = title;
 
     // Clear comment input
@@ -705,10 +705,23 @@ function selectFeedbackProduct(recordId) {
             </div>
         `;
     } else {
+        const helpTextOriginal = 'Hinweis: Du kommentierst den Originaltext, wie er aktuell wahrscheinlich auf Etiketten oder auf Hirundo.org wiedergegeben wird. Das bedeutet, dass dieser Artikel dort auf Basis dieser Auswertung nicht compliant ist und die Texte überarbeitet werden sollten. Dieser Workflow ist nur zum Festhalten von Feedback für die Ansprechperson.';
+        const helpTextWebshop = 'Hinweis: Diese Informationen werden an die Textgenerierungs-AI als zusätzliche Anweisung zurückgespielt. Gib möglichst genaue Anweisungen oder zusätzliche Informationen bezüglich der Fehler, die der AI helfen, ein besseres Ergebnis zu generieren.';
+        const helpText = currentFeedbackType === 'original' ? helpTextOriginal : helpTextWebshop;
+
         feedbackSection = `
             <div class="feedback-input-section">
-                <label for="feedbackTextarea">Dein Feedback an den Compliance-Entscheider:</label>
-                <textarea id="feedbackTextarea" placeholder="Beschreibe das Problem oder stelle eine Frage zum ${currentFeedbackType === 'original' ? 'Originaltext' : 'Webshop-Text'}..."></textarea>
+                <label>Dein Feedback:</label>
+                <div class="feedback-help-text">${helpText}</div>
+                <div class="richtext-toolbar">
+                    <button type="button" onclick="formatText('bold')" title="Fett"><b>B</b></button>
+                    <button type="button" onclick="formatText('italic')" title="Kursiv"><i>I</i></button>
+                    <button type="button" onclick="formatText('underline')" title="Unterstrichen"><u>U</u></button>
+                    <span class="toolbar-divider"></span>
+                    <button type="button" onclick="formatText('insertUnorderedList')" title="Liste">•</button>
+                    <button type="button" onclick="formatText('insertOrderedList')" title="Nummerierte Liste">1.</button>
+                </div>
+                <div id="feedbackEditor" class="richtext-editor" contenteditable="true" placeholder="Beschreibe das Problem oder stelle eine Frage zum ${currentFeedbackType === 'original' ? 'Originaltext' : 'Webshop-Text'}..."></div>
             </div>
             <div class="feedback-submit-section">
                 <span class="reviewer-info">Gesendet von: <strong>${escapeHtml(reviewerName || '-')}</strong></span>
@@ -724,7 +737,7 @@ function selectFeedbackProduct(recordId) {
                     <span>${sectionTitle}</span>
                     <span class="product-info">${escapeHtml(fields['Produktnummer'] || '')} - ${escapeHtml(fields['Produkt'] || '')}</span>
                 </div>
-                <div class="feedback-text-display">${escapeHtml(textContent).replace(/\n/g, '<br>')}</div>
+                <div class="feedback-text-display">${sanitizeHtml(textContent)}</div>
             </div>
             <div class="feedback-detail-right">
                 <div class="feedback-section-header">Compliance-Report</div>
@@ -738,11 +751,17 @@ function selectFeedbackProduct(recordId) {
     `;
 }
 
+function formatText(command) {
+    document.execCommand(command, false, null);
+    document.getElementById('feedbackEditor').focus();
+}
+
 async function submitFeedback() {
     if (!selectedFeedbackRecord) return;
 
-    const textarea = document.getElementById('feedbackTextarea');
-    const feedbackText = textarea.value.trim();
+    const editor = document.getElementById('feedbackEditor');
+    const feedbackHtml = editor.innerHTML.trim();
+    const feedbackText = editor.innerText.trim();
 
     if (!feedbackText) {
         alert('Bitte gib einen Feedback-Text ein.');
@@ -757,9 +776,9 @@ async function submitFeedback() {
         const feedbackField = currentFeedbackType === 'original' ? 'Feedback Originaltext' : 'Feedback Webshop';
         const newStatus = currentFeedbackType === 'original' ? 'Review Original eingereicht' : 'Review Webshop eingereicht';
 
-        // Format feedback with timestamp and reviewer name
+        // Format feedback with timestamp and reviewer name (Airtable supports rich text/HTML)
         const timestamp = new Date().toLocaleString('de-DE');
-        const formattedFeedback = `[${timestamp}] ${reviewerName}:\n${feedbackText}`;
+        const formattedFeedback = `<p><strong>[${timestamp}] ${escapeHtml(reviewerName)}:</strong></p>${feedbackHtml}`;
 
         // Update in Airtable
         await updateRecord(selectedFeedbackRecord.id, {
@@ -1533,6 +1552,26 @@ function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
+    return div.innerHTML;
+}
+
+function sanitizeHtml(html) {
+    if (!html) return '';
+    // Allow safe HTML tags, remove dangerous ones
+    const div = document.createElement('div');
+    div.innerHTML = html;
+
+    // Remove script tags and event handlers
+    div.querySelectorAll('script, style, iframe, object, embed').forEach(el => el.remove());
+    div.querySelectorAll('*').forEach(el => {
+        // Remove all event handlers
+        Array.from(el.attributes).forEach(attr => {
+            if (attr.name.startsWith('on') || attr.name === 'href' && attr.value.startsWith('javascript:')) {
+                el.removeAttribute(attr.name);
+            }
+        });
+    });
+
     return div.innerHTML;
 }
 

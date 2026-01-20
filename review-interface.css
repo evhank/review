@@ -1522,9 +1522,9 @@ body {
 }
 
 .feedback-section-header .product-info {
-    font-size: 12px;
-    color: #666;
-    font-weight: normal;
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
 }
 
 .feedback-text-display {
@@ -1588,6 +1588,17 @@ body {
     display: block;
 }
 
+.feedback-help-text {
+    background: #f0f5e5;
+    border-left: 3px solid #a0ba32;
+    padding: 12px 15px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #555;
+    border-radius: 0 6px 6px 0;
+}
+
 .feedback-input-section textarea {
     flex: 1;
     padding: 12px;
@@ -1608,6 +1619,76 @@ body {
 .feedback-input-section textarea:disabled {
     background: #f5f5f5;
     cursor: not-allowed;
+}
+
+.richtext-toolbar {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+}
+
+.richtext-toolbar button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.richtext-toolbar button:hover {
+    background: #e8e8e8;
+    border-color: #ccc;
+}
+
+.richtext-toolbar button:active {
+    background: #a0ba32;
+    color: white;
+    border-color: #a0ba32;
+}
+
+.toolbar-divider {
+    width: 1px;
+    background: #ddd;
+    margin: 0 4px;
+}
+
+.richtext-editor {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 0 0 8px 8px;
+    font-size: 14px;
+    font-family: inherit;
+    min-height: 120px;
+    overflow-y: auto;
+    background: white;
+    line-height: 1.6;
+}
+
+.richtext-editor:focus {
+    outline: none;
+    border-color: #a0ba32;
+    box-shadow: 0 0 0 3px rgba(160, 186, 50, 0.1);
+}
+
+.richtext-editor:empty::before {
+    content: attr(placeholder);
+    color: #999;
+    pointer-events: none;
+}
+
+.richtext-editor ul, .richtext-editor ol {
+    margin-left: 20px;
 }
 
 .feedback-submit-section {
