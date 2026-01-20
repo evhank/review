@@ -213,19 +213,19 @@
         </div>
 
         <div class="feedback-stats" id="feedbackStats">
-            <div class="stat-card red">
+            <div class="stat-card red clickable" onclick="setFeedbackFilter('kritisch')">
                 <div class="stat-value" id="feedbackStatKritisch">-</div>
                 <div class="stat-label">Kritisch</div>
             </div>
-            <div class="stat-card yellow">
+            <div class="stat-card yellow clickable" onclick="setFeedbackFilter('pruefung')">
                 <div class="stat-value" id="feedbackStatPruefung">-</div>
                 <div class="stat-label">Prüfung empfohlen</div>
             </div>
-            <div class="stat-card blue">
+            <div class="stat-card blue clickable active" onclick="setFeedbackFilter('offen')">
                 <div class="stat-value" id="feedbackStatOffen">-</div>
                 <div class="stat-label">Offen</div>
             </div>
-            <div class="stat-card green">
+            <div class="stat-card green clickable" onclick="setFeedbackFilter('erledigt')">
                 <div class="stat-value" id="feedbackStatErledigt">-</div>
                 <div class="stat-label">Erledigt</div>
             </div>
