@@ -856,6 +856,7 @@ async function submitFeedback() {
 
     try {
         const feedbackField = currentFeedbackType === 'original' ? 'Feedback Originaltext' : 'Feedback Webshop';
+        const statusField = currentFeedbackType === 'original' ? 'Original-Compliance-Status' : 'Status';
         const newStatus = currentFeedbackType === 'original' ? 'Review Original eingereicht' : 'Review Webshop eingereicht';
 
         // Format feedback with timestamp and reviewer name (Airtable supports rich text/HTML)
@@ -865,12 +866,12 @@ async function submitFeedback() {
         // Update in Airtable
         await updateRecord(selectedFeedbackRecord.id, {
             [feedbackField]: formattedFeedback,
-            'Status': newStatus
+            [statusField]: newStatus
         });
 
         // Update local data
         selectedFeedbackRecord.fields[feedbackField] = formattedFeedback;
-        selectedFeedbackRecord.fields['Status'] = newStatus;
+        selectedFeedbackRecord.fields[statusField] = newStatus;
 
         // Refresh display
         updateFeedbackStats();
