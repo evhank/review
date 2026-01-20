@@ -737,7 +737,7 @@ function selectFeedbackProduct(recordId) {
                     <span>${sectionTitle}</span>
                     <span class="product-info">${escapeHtml(fields['Produktnummer'] || '')} - ${escapeHtml(fields['Produkt'] || '')}</span>
                 </div>
-                <div class="feedback-text-display">${sanitizeHtml(textContent)}</div>
+                <div class="feedback-text-display preview-content">${sanitizeHtml(textContent)}</div>
             </div>
             <div class="feedback-detail-right">
                 <div class="feedback-section-header">Compliance-Report</div>
