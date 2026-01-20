@@ -556,25 +556,31 @@ function updateFeedbackStats() {
     let kritisch = 0, pruefung = 0, offen = 0, erledigt = 0;
 
     if (currentFeedbackType === 'original') {
-        // Count by Original-Compliance-Status
         feedbackRecords.forEach(r => {
             const status = r.fields['Original-Compliance-Status'];
             const hasFeedback = r.fields['Feedback Originaltext'];
 
-            if (status === 'Kritisch') {
-                if (hasFeedback) erledigt++; else { kritisch++; offen++; }
+            // Count erledigt: any record with feedback
+            if (hasFeedback) {
+                erledigt++;
+            } else if (status === 'Kritisch') {
+                kritisch++;
+                offen++;
             } else if (status === 'Prüfung empfohlen') {
-                if (hasFeedback) erledigt++; else { pruefung++; offen++; }
+                pruefung++;
+                offen++;
             }
         });
     } else {
-        // Webshop: Count by Status === 'Überarbeiten'
         feedbackRecords.forEach(r => {
             const status = r.fields['Status'];
             const hasFeedback = r.fields['Feedback Webshop'];
 
-            if (status === 'Überarbeiten') {
-                if (hasFeedback) erledigt++; else offen++;
+            // Count erledigt: any record with feedback
+            if (hasFeedback) {
+                erledigt++;
+            } else if (status === 'Überarbeiten') {
+                offen++;
             }
         });
         // For webshop, kritisch/pruefung not applicable
@@ -615,31 +621,32 @@ function getFilteredFeedbackRecords() {
     let filtered = feedbackRecords;
 
     if (currentFeedbackType === 'original') {
-        // Base filter: Original-Compliance-Status is 'Kritisch' or 'Prüfung empfohlen'
-        filtered = filtered.filter(r => {
-            const status = r.fields['Original-Compliance-Status'];
-            return status === 'Kritisch' || status === 'Prüfung empfohlen';
-        });
-
         // Apply specific filter
         if (currentFeedbackFilter === 'kritisch') {
             filtered = filtered.filter(r => r.fields['Original-Compliance-Status'] === 'Kritisch' && !r.fields[feedbackField]);
         } else if (currentFeedbackFilter === 'pruefung') {
             filtered = filtered.filter(r => r.fields['Original-Compliance-Status'] === 'Prüfung empfohlen' && !r.fields[feedbackField]);
         } else if (currentFeedbackFilter === 'offen') {
-            filtered = filtered.filter(r => !r.fields[feedbackField]);
+            // Show Kritisch or Prüfung empfohlen without feedback
+            filtered = filtered.filter(r => {
+                const status = r.fields['Original-Compliance-Status'];
+                return (status === 'Kritisch' || status === 'Prüfung empfohlen') && !r.fields[feedbackField];
+            });
         } else if (currentFeedbackFilter === 'erledigt') {
+            // Show items with feedback (status is now 'Review Original eingereicht')
             filtered = filtered.filter(r => r.fields[feedbackField]);
         }
     } else {
-        // Webshop: Status is 'Überarbeiten'
-        filtered = filtered.filter(r => r.fields['Status'] === 'Überarbeiten');
-
-        // Apply specific filter
+        // Webshop filters
         if (currentFeedbackFilter === 'offen') {
-            filtered = filtered.filter(r => !r.fields[feedbackField]);
+            // Show Überarbeiten without feedback
+            filtered = filtered.filter(r => r.fields['Status'] === 'Überarbeiten' && !r.fields[feedbackField]);
         } else if (currentFeedbackFilter === 'erledigt') {
+            // Show items with feedback (status is now 'Review Webshop eingereicht')
             filtered = filtered.filter(r => r.fields[feedbackField]);
+        } else {
+            // Default: show Überarbeiten
+            filtered = filtered.filter(r => r.fields['Status'] === 'Überarbeiten');
         }
     }
 
