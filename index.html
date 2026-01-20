@@ -45,6 +45,7 @@
                 <button class="mode-tab active" onclick="switchMode('review')" id="reviewModeTab">Review</button>
                 <button class="mode-tab" onclick="switchMode('browse')" id="browseModeTab">Browse</button>
                 <button class="mode-tab" onclick="switchMode('overview')" id="overviewModeTab">Übersicht</button>
+                <button class="mode-tab" onclick="switchMode('feedback')" id="feedbackModeTab">Feedback</button>
             </div>
             <div class="header-links">
                 <a href="https://airtable.com/appwfr6TDvdfTpLOb/tblxh8JKmGzkNe2aN" target="_blank" class="header-link">📊 Airtable</a>
@@ -200,7 +201,57 @@
             <!-- Pagination wird dynamisch eingefügt -->
         </div>
     </div>
-    
+
+    <!-- Feedback Page -->
+    <div id="feedbackPage" class="feedback-container">
+        <div class="feedback-header">
+            <h2 class="feedback-title">Feedback an Compliance-Entscheider</h2>
+            <div class="feedback-type-toggle">
+                <button class="feedback-type-btn active" onclick="setFeedbackType('original')" id="feedbackTypeOriginal">Originaltext</button>
+                <button class="feedback-type-btn" onclick="setFeedbackType('webshop')" id="feedbackTypeWebshop">Webshop</button>
+            </div>
+        </div>
+
+        <div class="feedback-stats" id="feedbackStats">
+            <div class="stat-card red">
+                <div class="stat-value" id="feedbackStatKritisch">-</div>
+                <div class="stat-label">Kritisch</div>
+            </div>
+            <div class="stat-card yellow">
+                <div class="stat-value" id="feedbackStatPruefung">-</div>
+                <div class="stat-label">Prüfung empfohlen</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-value" id="feedbackStatOffen">-</div>
+                <div class="stat-label">Offen</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-value" id="feedbackStatErledigt">-</div>
+                <div class="stat-label">Erledigt</div>
+            </div>
+        </div>
+
+        <div class="feedback-main">
+            <!-- Linke Spalte: Produktliste -->
+            <div class="feedback-list-panel">
+                <div class="feedback-list-header">
+                    <span>Produkte mit Feedback-Bedarf</span>
+                    <input type="text" id="feedbackSearchInput" placeholder="Suchen..." onkeyup="filterFeedbackList()">
+                </div>
+                <div class="feedback-list" id="feedbackList">
+                    <div class="feedback-list-empty">Lade Daten...</div>
+                </div>
+            </div>
+
+            <!-- Rechte Spalte: Details -->
+            <div class="feedback-detail-panel" id="feedbackDetailPanel">
+                <div class="feedback-detail-empty">
+                    <p>Wähle ein Produkt aus der Liste, um Details anzuzeigen und Feedback zu geben.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="review-interface.js"></script>
 </body>
 </html>
