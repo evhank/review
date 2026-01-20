@@ -1571,7 +1571,106 @@ body {
     font-size: 13px;
     line-height: 1.6;
     color: #555;
-    white-space: pre-wrap;
+}
+
+/* Compliance Report Formatting */
+.report-summary {
+    background: #fff3cd;
+    border-left: 3px solid #ffc107;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border-radius: 0 6px 6px 0;
+}
+
+.report-recommendation {
+    background: #f8f9fa;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+}
+
+.report-section {
+    margin-bottom: 15px;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.report-section-title {
+    font-weight: 600;
+    font-size: 12px;
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #eee;
+}
+
+.report-section-title.error {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.report-section-title.warning {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.report-section-content {
+    padding: 10px 12px;
+    font-size: 12px;
+}
+
+.report-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+}
+
+.report-item:last-child {
+    border-bottom: none;
+}
+
+.violation-type {
+    display: inline-block;
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.violation-text {
+    font-style: italic;
+    color: #666;
+    margin: 4px 0;
+}
+
+.violation-reason {
+    color: #555;
+    font-size: 11px;
+}
+
+.report-faq {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.report-faq:last-child {
+    border-bottom: none;
+}
+
+.faq-question {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+
+.faq-answer {
+    color: #666;
+    font-size: 12px;
+    line-height: 1.5;
 }
 
 .feedback-input-section {
