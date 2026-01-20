@@ -27,7 +27,10 @@ const FIELDS = {
     geprueftAm: 'fld5N56RiQDtjnShL',
     // Neue Felder für Original-Compliance
     originalComplianceStatus: 'fldPa5MMvArcEmBrn',
-    originalComplianceFindings: 'fldd4r7GTcegj0ntu'
+    originalComplianceFindings: 'fldd4r7GTcegj0ntu',
+    // Feedback-Felder (Field IDs nach Erstellung in Airtable eintragen)
+    feedbackOriginaltext: 'PLACEHOLDER_FEEDBACK_ORIGINALTEXT',  // TODO: Field ID eintragen
+    feedbackWebshop: 'PLACEHOLDER_FEEDBACK_WEBSHOP'             // TODO: Field ID eintragen
 };
 
 // ============================================
@@ -62,30 +65,38 @@ async function init() {
     const modeParam = urlParams.get('mode');
     
     // Set mode from URL parameter
-    if (modeParam === 'browse' || modeParam === 'review' || modeParam === 'overview') {
+    if (modeParam === 'browse' || modeParam === 'review' || modeParam === 'overview' || modeParam === 'feedback') {
         currentMode = modeParam;
         document.getElementById('reviewModeTab').classList.toggle('active', modeParam === 'review');
         document.getElementById('browseModeTab').classList.toggle('active', modeParam === 'browse');
         document.getElementById('overviewModeTab').classList.toggle('active', modeParam === 'overview');
+        document.getElementById('feedbackModeTab').classList.toggle('active', modeParam === 'feedback');
         document.getElementById('mainApp').classList.toggle('browse-mode', modeParam === 'browse');
-        
+
         // Show/hide containers
-        document.getElementById('mainApp').style.display = modeParam === 'overview' ? 'none' : 'block';
+        const showMainApp = modeParam === 'review' || modeParam === 'browse';
+        document.getElementById('mainApp').style.display = showMainApp ? 'block' : 'none';
         document.getElementById('overviewPage').classList.toggle('active', modeParam === 'overview');
-        
-        // Show/hide header elements in overview mode
-        document.getElementById('productInfoBar').style.display = modeParam === 'overview' ? 'none' : 'flex';
-        document.getElementById('navControls').style.display = modeParam === 'overview' ? 'none' : 'flex';
-        
+        document.getElementById('feedbackPage').classList.toggle('active', modeParam === 'feedback');
+
+        // Show/hide header elements in overview/feedback mode
+        const showProductBar = modeParam === 'review' || modeParam === 'browse';
+        document.getElementById('productInfoBar').style.display = showProductBar ? 'flex' : 'none';
+        document.getElementById('navControls').style.display = showProductBar ? 'flex' : 'none';
+
         let title = 'Produkttext Review';
         if (modeParam === 'browse') title = 'Produkttext Browse (Alle)';
         if (modeParam === 'overview') title = 'Produkttext Übersicht';
+        if (modeParam === 'feedback') title = 'Feedback an Compliance';
         document.querySelector('.header h1').textContent = title;
     }
-    
+
     if (modeParam === 'overview') {
         // Load overview data
         await loadOverviewData();
+    } else if (modeParam === 'feedback') {
+        // Load feedback data
+        await loadFeedbackData();
     } else if (recordId) {
         // Direct link to specific record
         await loadRecord(recordId);
@@ -182,36 +193,43 @@ async function loadQueue() {
 
 function switchMode(mode) {
     currentMode = mode;
-    
+
     // Update tab styles
     document.getElementById('reviewModeTab').classList.toggle('active', mode === 'review');
     document.getElementById('browseModeTab').classList.toggle('active', mode === 'browse');
     document.getElementById('overviewModeTab').classList.toggle('active', mode === 'overview');
-    
+    document.getElementById('feedbackModeTab').classList.toggle('active', mode === 'feedback');
+
     // Show/hide containers
-    document.getElementById('mainApp').style.display = mode === 'overview' ? 'none' : 'block';
+    const showMainApp = mode === 'review' || mode === 'browse';
+    document.getElementById('mainApp').style.display = showMainApp ? 'block' : 'none';
     document.getElementById('overviewPage').classList.toggle('active', mode === 'overview');
-    
-    // Show/hide header elements in overview mode
-    document.getElementById('productInfoBar').style.display = mode === 'overview' ? 'none' : 'flex';
-    document.getElementById('navControls').style.display = mode === 'overview' ? 'none' : 'flex';
-    
+    document.getElementById('feedbackPage').classList.toggle('active', mode === 'feedback');
+
+    // Show/hide header elements in overview/feedback mode
+    const showProductBar = mode === 'review' || mode === 'browse';
+    document.getElementById('productInfoBar').style.display = showProductBar ? 'flex' : 'none';
+    document.getElementById('navControls').style.display = showProductBar ? 'flex' : 'none';
+
     // Update body class for browse mode styling
     document.getElementById('mainApp').classList.toggle('browse-mode', mode === 'browse');
-    
+
     // Update header title
     let title = 'Produkttext Review';
     if (mode === 'browse') title = 'Produkttext Browse (Alle)';
     if (mode === 'overview') title = 'Produkttext Übersicht';
+    if (mode === 'feedback') title = 'Feedback an Compliance';
     document.querySelector('.header h1').textContent = title;
-    
+
     // Clear comment input
     const commentInput = document.getElementById('commentInput');
     if (commentInput) commentInput.value = '';
-    
+
     // Load appropriate data
     if (mode === 'overview') {
         loadOverviewData();
+    } else if (mode === 'feedback') {
+        loadFeedbackData();
     } else {
         loadQueue();
     }
@@ -475,6 +493,294 @@ async function updateRecord(recordId, fields) {
         method: 'PATCH',
         body: JSON.stringify({ fields })
     });
+}
+
+// ============================================
+// FEEDBACK FUNCTIONS
+// ============================================
+
+let feedbackRecords = [];
+let currentFeedbackType = 'original'; // 'original' or 'webshop'
+let selectedFeedbackRecord = null;
+
+async function loadFeedbackData() {
+    const listEl = document.getElementById('feedbackList');
+    listEl.innerHTML = '<div class="feedback-list-empty">Lade Daten...</div>';
+
+    try {
+        // Load all records with pagination
+        feedbackRecords = [];
+        let offset = null;
+
+        do {
+            let url = `${AIRTABLE_TABLE_ID}?pageSize=100`;
+            if (offset) {
+                url += `&offset=${offset}`;
+            }
+
+            const data = await airtableFetch(url);
+            feedbackRecords = feedbackRecords.concat(data.records || []);
+            offset = data.offset;
+
+        } while (offset);
+
+        updateFeedbackStats();
+        renderFeedbackList();
+
+    } catch (error) {
+        listEl.innerHTML = `<div class="feedback-list-empty">Fehler: ${error.message}</div>`;
+    }
+}
+
+function setFeedbackType(type) {
+    currentFeedbackType = type;
+    document.getElementById('feedbackTypeOriginal').classList.toggle('active', type === 'original');
+    document.getElementById('feedbackTypeWebshop').classList.toggle('active', type === 'webshop');
+
+    // Reset selection
+    selectedFeedbackRecord = null;
+    document.getElementById('feedbackDetailPanel').innerHTML =
+        '<div class="feedback-detail-empty"><p>Wähle ein Produkt aus der Liste, um Details anzuzeigen und Feedback zu geben.</p></div>';
+
+    updateFeedbackStats();
+    renderFeedbackList();
+}
+
+function updateFeedbackStats() {
+    let kritisch = 0, pruefung = 0, offen = 0, erledigt = 0;
+
+    if (currentFeedbackType === 'original') {
+        // Count by Original-Compliance-Status
+        feedbackRecords.forEach(r => {
+            const status = r.fields['Original-Compliance-Status'];
+            const hasFeedback = r.fields['Feedback Originaltext'];
+
+            if (status === 'Kritisch') {
+                if (hasFeedback) erledigt++; else { kritisch++; offen++; }
+            } else if (status === 'Prüfung empfohlen') {
+                if (hasFeedback) erledigt++; else { pruefung++; offen++; }
+            }
+        });
+    } else {
+        // Webshop: Count by Status === 'Überarbeiten'
+        feedbackRecords.forEach(r => {
+            const status = r.fields['Status'];
+            const hasFeedback = r.fields['Feedback Webshop'];
+
+            if (status === 'Überarbeiten') {
+                if (hasFeedback) erledigt++; else offen++;
+            }
+        });
+        // For webshop, kritisch/pruefung not applicable
+        kritisch = '-';
+        pruefung = '-';
+    }
+
+    document.getElementById('feedbackStatKritisch').textContent = kritisch;
+    document.getElementById('feedbackStatPruefung').textContent = pruefung;
+    document.getElementById('feedbackStatOffen').textContent = offen;
+    document.getElementById('feedbackStatErledigt').textContent = erledigt;
+}
+
+function getFilteredFeedbackRecords() {
+    const searchTerm = document.getElementById('feedbackSearchInput').value.toLowerCase();
+
+    let filtered;
+
+    if (currentFeedbackType === 'original') {
+        // Filter: Original-Compliance-Status is 'Kritisch' or 'Prüfung empfohlen'
+        filtered = feedbackRecords.filter(r => {
+            const status = r.fields['Original-Compliance-Status'];
+            return status === 'Kritisch' || status === 'Prüfung empfohlen';
+        });
+    } else {
+        // Webshop: Status is 'Überarbeiten'
+        filtered = feedbackRecords.filter(r => r.fields['Status'] === 'Überarbeiten');
+    }
+
+    // Apply search
+    if (searchTerm) {
+        filtered = filtered.filter(r => {
+            const produktnummer = (r.fields['Produktnummer'] || '').toLowerCase();
+            const produktname = (r.fields['Produkt'] || '').toLowerCase();
+            return produktnummer.includes(searchTerm) || produktname.includes(searchTerm);
+        });
+    }
+
+    // Sort by Ampel: ROT first, then GELB, then GRÜN
+    const ampelOrder = { 'ROT': 0, 'GELB': 1, 'GRÜN': 2 };
+    filtered.sort((a, b) => {
+        const ampelA = a.fields['Ampel'] || 'GRÜN';
+        const ampelB = b.fields['Ampel'] || 'GRÜN';
+        return (ampelOrder[ampelA] || 2) - (ampelOrder[ampelB] || 2);
+    });
+
+    return filtered;
+}
+
+function renderFeedbackList() {
+    const listEl = document.getElementById('feedbackList');
+    const filtered = getFilteredFeedbackRecords();
+
+    if (filtered.length === 0) {
+        listEl.innerHTML = '<div class="feedback-list-empty">Keine Produkte mit Feedback-Bedarf gefunden.</div>';
+        return;
+    }
+
+    const feedbackField = currentFeedbackType === 'original' ? 'Feedback Originaltext' : 'Feedback Webshop';
+
+    listEl.innerHTML = filtered.map(record => {
+        const fields = record.fields;
+        const hasFeedback = fields[feedbackField];
+        const ampel = fields['Ampel'] || 'GRÜN';
+        const ampelClass = ampel === 'ROT' ? 'rot' : (ampel === 'GELB' ? 'gelb' : 'gruen');
+
+        let statusText = '';
+        if (currentFeedbackType === 'original') {
+            const compStatus = fields['Original-Compliance-Status'] || '';
+            statusText = compStatus;
+        } else {
+            statusText = fields['Status'] || '';
+        }
+
+        return `
+            <div class="feedback-list-item ${hasFeedback ? 'completed' : ''} ${selectedFeedbackRecord?.id === record.id ? 'active' : ''}"
+                 onclick="selectFeedbackProduct('${record.id}')">
+                <div class="item-header">
+                    <span class="item-sku">${escapeHtml(fields['Produktnummer'] || '-')}</span>
+                    <span class="item-ampel ${ampelClass}">${ampel}</span>
+                </div>
+                <div class="item-name">${escapeHtml(fields['Produkt'] || '-')}</div>
+                <div class="item-status ${hasFeedback ? 'erledigt' : ''}">${hasFeedback ? '✓ Feedback gesendet' : statusText}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterFeedbackList() {
+    renderFeedbackList();
+}
+
+function selectFeedbackProduct(recordId) {
+    selectedFeedbackRecord = feedbackRecords.find(r => r.id === recordId);
+    if (!selectedFeedbackRecord) return;
+
+    // Update list selection
+    renderFeedbackList();
+
+    const fields = selectedFeedbackRecord.fields;
+    const feedbackField = currentFeedbackType === 'original' ? 'Feedback Originaltext' : 'Feedback Webshop';
+    const existingFeedback = fields[feedbackField];
+
+    const detailPanel = document.getElementById('feedbackDetailPanel');
+
+    // Determine text and compliance info based on type
+    let textContent, complianceStatus, complianceFindings, sectionTitle;
+
+    if (currentFeedbackType === 'original') {
+        textContent = fields['Alter Text'] || 'Kein Originaltext vorhanden.';
+        complianceStatus = fields['Original-Compliance-Status'] || 'OK';
+        complianceFindings = fields['Original-Compliance-Findings'] || 'Keine Findings vorhanden.';
+        sectionTitle = 'Originaltext';
+    } else {
+        textContent = fields['Neuer Text'] || 'Kein neuer Text vorhanden.';
+        complianceStatus = fields['Ampel'] || 'GRÜN';
+        complianceFindings = fields['Compliance-Protokoll'] || 'Kein Protokoll vorhanden.';
+        sectionTitle = 'Neuer Text (Webshop)';
+    }
+
+    // Map status to CSS class
+    let statusClass = 'ok';
+    if (complianceStatus === 'Kritisch' || complianceStatus === 'ROT') statusClass = 'kritisch';
+    else if (complianceStatus === 'Prüfung empfohlen' || complianceStatus === 'GELB') statusClass = 'pruefung';
+
+    // Build detail HTML
+    let feedbackSection;
+    if (existingFeedback) {
+        feedbackSection = `
+            <div class="feedback-already-submitted">
+                <div class="checkmark">✓</div>
+                <div class="message">Feedback wurde bereits gesendet</div>
+                <div class="submitted-text">${escapeHtml(existingFeedback)}</div>
+            </div>
+        `;
+    } else {
+        feedbackSection = `
+            <div class="feedback-input-section">
+                <label for="feedbackTextarea">Dein Feedback an den Compliance-Entscheider:</label>
+                <textarea id="feedbackTextarea" placeholder="Beschreibe das Problem oder stelle eine Frage zum ${currentFeedbackType === 'original' ? 'Originaltext' : 'Webshop-Text'}..."></textarea>
+            </div>
+            <div class="feedback-submit-section">
+                <span class="reviewer-info">Gesendet von: <strong>${escapeHtml(reviewerName || '-')}</strong></span>
+                <button class="feedback-submit-btn" onclick="submitFeedback()">Feedback senden</button>
+            </div>
+        `;
+    }
+
+    detailPanel.innerHTML = `
+        <div class="feedback-detail-content">
+            <div class="feedback-detail-left">
+                <div class="feedback-section-header">
+                    <span>${sectionTitle}</span>
+                    <span class="product-info">${escapeHtml(fields['Produktnummer'] || '')} - ${escapeHtml(fields['Produkt'] || '')}</span>
+                </div>
+                <div class="feedback-text-display">${escapeHtml(textContent).replace(/\n/g, '<br>')}</div>
+            </div>
+            <div class="feedback-detail-right">
+                <div class="feedback-section-header">Compliance-Report</div>
+                <div class="feedback-compliance-report">
+                    <div class="compliance-status ${statusClass}">${escapeHtml(complianceStatus)}</div>
+                    <div class="compliance-findings">${escapeHtml(complianceFindings)}</div>
+                </div>
+                ${feedbackSection}
+            </div>
+        </div>
+    `;
+}
+
+async function submitFeedback() {
+    if (!selectedFeedbackRecord) return;
+
+    const textarea = document.getElementById('feedbackTextarea');
+    const feedbackText = textarea.value.trim();
+
+    if (!feedbackText) {
+        alert('Bitte gib einen Feedback-Text ein.');
+        return;
+    }
+
+    const submitBtn = document.querySelector('.feedback-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Wird gesendet...';
+
+    try {
+        const feedbackField = currentFeedbackType === 'original' ? 'Feedback Originaltext' : 'Feedback Webshop';
+        const newStatus = currentFeedbackType === 'original' ? 'Review Original eingereicht' : 'Review Webshop eingereicht';
+
+        // Format feedback with timestamp and reviewer name
+        const timestamp = new Date().toLocaleString('de-DE');
+        const formattedFeedback = `[${timestamp}] ${reviewerName}:\n${feedbackText}`;
+
+        // Update in Airtable
+        await updateRecord(selectedFeedbackRecord.id, {
+            [feedbackField]: formattedFeedback,
+            'Status': newStatus
+        });
+
+        // Update local data
+        selectedFeedbackRecord.fields[feedbackField] = formattedFeedback;
+        selectedFeedbackRecord.fields['Status'] = newStatus;
+
+        // Refresh display
+        updateFeedbackStats();
+        renderFeedbackList();
+        selectFeedbackProduct(selectedFeedbackRecord.id);
+
+    } catch (error) {
+        alert('Fehler beim Senden: ' + error.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Feedback senden';
+    }
 }
 
 // ============================================
@@ -1223,6 +1529,13 @@ async function navigateNext() {
 // UI HELPERS
 // ============================================
 
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function setDevice(device, btn) {
     document.getElementById('previewFrame').className = 'preview-frame ' + device;
     document.querySelectorAll('.device-toggle button').forEach(b => b.classList.remove('active'));
@@ -1237,7 +1550,7 @@ function showError(message) {
     document.getElementById('mainApp').innerHTML = `
         <div class="error-state">
             <h2>⚠️ Fehler</h2>
-            <p>${message}</p>
+            <p>${escapeHtml(message)}</p>
             <button onclick="window.location.reload()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">
                 Neu laden
             </button>
