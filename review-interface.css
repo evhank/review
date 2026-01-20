@@ -1588,6 +1588,17 @@ body {
     display: block;
 }
 
+.feedback-help-text {
+    background: #f0f5e5;
+    border-left: 3px solid #a0ba32;
+    padding: 12px 15px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #555;
+    border-radius: 0 6px 6px 0;
+}
+
 .feedback-input-section textarea {
     flex: 1;
     padding: 12px;

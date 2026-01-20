@@ -87,7 +87,7 @@ async function init() {
         let title = 'Produkttext Review';
         if (modeParam === 'browse') title = 'Produkttext Browse (Alle)';
         if (modeParam === 'overview') title = 'Produkttext Übersicht';
-        if (modeParam === 'feedback') title = 'Feedback an Compliance';
+        if (modeParam === 'feedback') title = 'Feedback der Compliance-Entscheider';
         document.querySelector('.header h1').textContent = title;
     }
 
@@ -218,7 +218,7 @@ function switchMode(mode) {
     let title = 'Produkttext Review';
     if (mode === 'browse') title = 'Produkttext Browse (Alle)';
     if (mode === 'overview') title = 'Produkttext Übersicht';
-    if (mode === 'feedback') title = 'Feedback an Compliance';
+    if (mode === 'feedback') title = 'Feedback der Compliance-Entscheider';
     document.querySelector('.header h1').textContent = title;
 
     // Clear comment input
@@ -705,9 +705,14 @@ function selectFeedbackProduct(recordId) {
             </div>
         `;
     } else {
+        const helpTextOriginal = 'Hinweis: Du kommentierst den Originaltext, wie er aktuell wahrscheinlich auf Etiketten oder auf Hirundo.org wiedergegeben wird. Das bedeutet, dass dieser Artikel dort auf Basis dieser Auswertung nicht compliant ist und die Texte überarbeitet werden sollten. Dieser Workflow ist nur zum Festhalten von Feedback für die Ansprechperson.';
+        const helpTextWebshop = 'Hinweis: Diese Informationen werden an die Textgenerierungs-AI als zusätzliche Anweisung zurückgespielt. Gib möglichst genaue Anweisungen oder zusätzliche Informationen bezüglich der Fehler, die der AI helfen, ein besseres Ergebnis zu generieren.';
+        const helpText = currentFeedbackType === 'original' ? helpTextOriginal : helpTextWebshop;
+
         feedbackSection = `
             <div class="feedback-input-section">
-                <label>Dein Feedback an den Compliance-Entscheider:</label>
+                <label>Dein Feedback:</label>
+                <div class="feedback-help-text">${helpText}</div>
                 <div class="richtext-toolbar">
                     <button type="button" onclick="formatText('bold')" title="Fett"><b>B</b></button>
                     <button type="button" onclick="formatText('italic')" title="Kursiv"><i>I</i></button>
