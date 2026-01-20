@@ -37,8 +37,36 @@ const FIELDS = {
 // STATE
 // ============================================
 
-let token = localStorage.getItem('airtable_token');
-let reviewerName = localStorage.getItem('reviewer_name');
+// Safe localStorage wrapper for iOS Safari compatibility
+function safeGetItem(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch (e) {
+        console.warn('localStorage not available:', e);
+        return null;
+    }
+}
+
+function safeSetItem(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (e) {
+        console.warn('localStorage not available:', e);
+        return false;
+    }
+}
+
+function safeRemoveItem(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (e) {
+        console.warn('localStorage not available:', e);
+    }
+}
+
+let token = safeGetItem('airtable_token');
+let reviewerName = safeGetItem('reviewer_name');
 let currentRecord = null;
 let recordQueue = [];
 let currentQueueIndex = 0;
@@ -119,8 +147,8 @@ function saveSetup() {
         return;
     }
     
-    localStorage.setItem('reviewer_name', inputName);
-    localStorage.setItem('airtable_token', inputToken);
+    safeSetItem('reviewer_name', inputName);
+    safeSetItem('airtable_token', inputToken);
     reviewerName = inputName;
     token = inputToken;
     document.getElementById('setupScreen').style.display = 'none';
@@ -1904,4 +1932,13 @@ function showCriteria() {
 // START
 // ============================================
 
-init();
+// Wrap init in error handler to ensure setup screen shows on failure
+try {
+    init().catch(err => {
+        console.error('Init error:', err);
+        document.getElementById('setupScreen').style.display = 'flex';
+    });
+} catch (e) {
+    console.error('Critical error:', e);
+    document.getElementById('setupScreen').style.display = 'flex';
+}
