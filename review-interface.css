@@ -1903,3 +1903,350 @@ body {
     max-height: 200px;
     overflow-y: auto;
 }
+
+/* ============================================
+   RESPONSIVE / MOBILE STYLES
+   ============================================ */
+
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
+    /* Review/Browse: 3 columns -> 2 columns */
+    #mainApp {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    #mainApp .panel:first-child {
+        display: none; /* Hide left panel (meta) on tablet */
+    }
+
+    /* Feedback: narrower sidebar */
+    .feedback-main {
+        grid-template-columns: 280px 1fr;
+    }
+}
+
+/* Mobile breakpoint */
+@media (max-width: 768px) {
+    /* Header: stack elements */
+    .header {
+        flex-direction: column;
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .header-left {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .header-branding {
+        margin-right: 0;
+    }
+
+    .header h1 {
+        display: none; /* Hide title on mobile, shown in tabs */
+    }
+
+    .header-links {
+        display: none; /* Hide Airtable/Hilfe links on mobile */
+    }
+
+    /* Mode tabs: full width, scrollable */
+    .mode-tabs {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .mode-tab {
+        padding: 8px 12px;
+        font-size: 0.85em;
+        flex: 1;
+        min-width: 70px;
+        text-align: center;
+    }
+
+    /* Product info bar */
+    #productInfoBar {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 8px;
+        padding: 10px 12px !important;
+    }
+
+    .product-sku {
+        font-size: 0.9em;
+    }
+
+    .product-name {
+        font-size: 1em;
+    }
+
+    /* Navigation controls */
+    #navControls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .nav-btn {
+        padding: 10px 16px;
+        font-size: 0.9em;
+        min-height: 44px; /* iOS touch target */
+    }
+
+    /* Review/Browse: single column, stacked panels */
+    #mainApp {
+        display: flex !important;
+        flex-direction: column !important;
+        height: auto !important;
+        min-height: calc(100vh - 120px);
+    }
+
+    #mainApp .panel {
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+        max-height: none;
+    }
+
+    #mainApp .panel:first-child {
+        display: flex; /* Show meta panel again */
+        order: 2; /* Move below preview */
+    }
+
+    #mainApp .panel:nth-child(2) {
+        order: 1; /* Preview first */
+    }
+
+    #mainApp .panel:last-child {
+        order: 3; /* Protocol last */
+    }
+
+    .panel-content {
+        padding: 12px;
+        padding-bottom: 20px;
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+
+    /* Overview page */
+    .overview-page {
+        padding: 12px !important;
+    }
+
+    .overview-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .overview-search {
+        width: 100%;
+    }
+
+    .filter-tabs {
+        flex-wrap: wrap;
+    }
+
+    .filter-tab {
+        padding: 8px 12px;
+        font-size: 0.85em;
+        min-height: 44px;
+    }
+
+    /* Overview table: horizontal scroll */
+    .overview-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .overview-table {
+        min-width: 600px;
+    }
+
+    .overview-table th,
+    .overview-table td {
+        padding: 10px 12px;
+        font-size: 0.85em;
+    }
+
+    /* Pagination */
+    .pagination {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .pagination button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Feedback page */
+    .feedback-page {
+        padding: 12px !important;
+    }
+
+    .feedback-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .feedback-title {
+        font-size: 1em;
+    }
+
+    .feedback-type-toggle {
+        position: static;
+    }
+
+    .feedback-stats {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .feedback-stats .stat-card {
+        min-width: 70px;
+        padding: 6px 10px;
+    }
+
+    .feedback-stats .stat-card .stat-value {
+        font-size: 1.1em;
+    }
+
+    .feedback-stats .stat-card .stat-label {
+        font-size: 0.7em;
+    }
+
+    /* Feedback main: single column */
+    .feedback-main {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        gap: 12px;
+    }
+
+    .feedback-list-panel {
+        max-height: 40vh;
+        min-height: 200px;
+    }
+
+    .feedback-detail-panel {
+        min-height: 50vh;
+    }
+
+    /* Feedback detail: stacked */
+    .feedback-detail-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .feedback-detail-left,
+    .feedback-detail-right {
+        border-right: none;
+        border-bottom: 1px solid #eee;
+    }
+
+    .feedback-text-content {
+        max-height: 40vh;
+    }
+
+    /* Search inputs */
+    .search-input,
+    #feedbackSearchInput {
+        font-size: 16px !important; /* Prevent iOS zoom */
+        min-height: 44px;
+    }
+
+    /* Buttons: larger touch targets */
+    button, .btn {
+        min-height: 44px;
+        padding: 10px 16px;
+    }
+
+    /* Setup screen */
+    .setup-card {
+        padding: 24px;
+        width: 95%;
+    }
+
+    .setup-card input {
+        font-size: 16px !important;
+        min-height: 44px;
+        padding: 12px;
+    }
+
+    .setup-card button {
+        min-height: 48px;
+        font-size: 1em;
+    }
+
+    /* Action bar */
+    .action-bar {
+        padding: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .action-bar .btn {
+        flex: 1;
+        min-width: 100px;
+    }
+
+    /* SEO grid */
+    .seo-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Modals */
+    .modal {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .modal-content {
+        padding: 16px;
+    }
+}
+
+/* Small phone breakpoint */
+@media (max-width: 480px) {
+    .header {
+        padding: 8px 10px;
+    }
+
+    .header-logo {
+        height: 28px;
+    }
+
+    .app-name {
+        font-size: 0.6em;
+    }
+
+    .mode-tab {
+        padding: 6px 8px;
+        font-size: 0.8em;
+    }
+
+    .feedback-stats .stat-card {
+        min-width: 60px;
+        padding: 5px 8px;
+    }
+
+    .feedback-list-item {
+        padding: 10px;
+    }
+
+    .item-name {
+        font-size: 0.9em;
+    }
+
+    /* Rich text toolbar */
+    .richtext-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .richtext-toolbar button {
+        width: 36px;
+        height: 36px;
+    }
+}
