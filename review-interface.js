@@ -563,10 +563,9 @@ function updateFeedbackStats() {
     if (currentFeedbackType === 'original') {
         feedbackRecords.forEach(r => {
             const status = r.fields['Original-Compliance-Status'];
-            const hasFeedback = r.fields['Feedback Originaltext'];
 
-            // Count erledigt: any record with feedback
-            if (hasFeedback) {
+            // Count based on status (not feedback field content)
+            if (status === 'Review Original eingereicht') {
                 erledigt++;
             } else if (status === 'Kritisch') {
                 kritisch++;
@@ -579,10 +578,9 @@ function updateFeedbackStats() {
     } else {
         feedbackRecords.forEach(r => {
             const status = r.fields['Status'];
-            const hasFeedback = r.fields['Feedback Webshop'];
 
-            // Count erledigt: any record with feedback
-            if (hasFeedback) {
+            // Count based on status (not feedback field content)
+            if (status === 'Review Webshop eingereicht') {
                 erledigt++;
             } else if (status === 'Überarbeiten') {
                 offen++;
@@ -621,34 +619,29 @@ function setFeedbackFilter(filter) {
 
 function getFilteredFeedbackRecords() {
     const searchTerm = document.getElementById('feedbackSearchInput').value.toLowerCase();
-    const feedbackField = currentFeedbackType === 'original' ? 'Feedback Originaltext' : 'Feedback Webshop';
 
     let filtered = feedbackRecords;
 
     if (currentFeedbackType === 'original') {
-        // Apply specific filter
+        // Filter based on Original-Compliance-Status
         if (currentFeedbackFilter === 'kritisch') {
-            filtered = filtered.filter(r => r.fields['Original-Compliance-Status'] === 'Kritisch' && !r.fields[feedbackField]);
+            filtered = filtered.filter(r => r.fields['Original-Compliance-Status'] === 'Kritisch');
         } else if (currentFeedbackFilter === 'pruefung') {
-            filtered = filtered.filter(r => r.fields['Original-Compliance-Status'] === 'Prüfung empfohlen' && !r.fields[feedbackField]);
+            filtered = filtered.filter(r => r.fields['Original-Compliance-Status'] === 'Prüfung empfohlen');
         } else if (currentFeedbackFilter === 'offen') {
-            // Show Kritisch or Prüfung empfohlen without feedback
             filtered = filtered.filter(r => {
                 const status = r.fields['Original-Compliance-Status'];
-                return (status === 'Kritisch' || status === 'Prüfung empfohlen') && !r.fields[feedbackField];
+                return status === 'Kritisch' || status === 'Prüfung empfohlen';
             });
         } else if (currentFeedbackFilter === 'erledigt') {
-            // Show items with feedback (status is now 'Review Original eingereicht')
-            filtered = filtered.filter(r => r.fields[feedbackField]);
+            filtered = filtered.filter(r => r.fields['Original-Compliance-Status'] === 'Review Original eingereicht');
         }
     } else {
-        // Webshop filters
+        // Filter based on Status
         if (currentFeedbackFilter === 'offen') {
-            // Show Überarbeiten without feedback
-            filtered = filtered.filter(r => r.fields['Status'] === 'Überarbeiten' && !r.fields[feedbackField]);
+            filtered = filtered.filter(r => r.fields['Status'] === 'Überarbeiten');
         } else if (currentFeedbackFilter === 'erledigt') {
-            // Show items with feedback (status is now 'Review Webshop eingereicht')
-            filtered = filtered.filter(r => r.fields[feedbackField]);
+            filtered = filtered.filter(r => r.fields['Status'] === 'Review Webshop eingereicht');
         } else {
             // Default: show Überarbeiten
             filtered = filtered.filter(r => r.fields['Status'] === 'Überarbeiten');
@@ -680,35 +673,37 @@ function renderFeedbackList() {
     const filtered = getFilteredFeedbackRecords();
 
     if (filtered.length === 0) {
-        listEl.innerHTML = '<div class="feedback-list-empty">Keine Produkte mit Feedback-Bedarf gefunden.</div>';
+        listEl.innerHTML = '<div class="feedback-list-empty">Keine Produkte gefunden.</div>';
         return;
     }
 
-    const feedbackField = currentFeedbackType === 'original' ? 'Feedback Originaltext' : 'Feedback Webshop';
-
     listEl.innerHTML = filtered.map(record => {
         const fields = record.fields;
-        const hasFeedback = fields[feedbackField];
         const ampel = fields['Ampel'] || 'GRÜN';
         const ampelClass = ampel === 'ROT' ? 'rot' : (ampel === 'GELB' ? 'gelb' : 'gruen');
 
+        // Check status for "completed" state
+        let isCompleted = false;
         let statusText = '';
         if (currentFeedbackType === 'original') {
             const compStatus = fields['Original-Compliance-Status'] || '';
+            isCompleted = compStatus === 'Review Original eingereicht';
             statusText = compStatus;
         } else {
-            statusText = fields['Status'] || '';
+            const status = fields['Status'] || '';
+            isCompleted = status === 'Review Webshop eingereicht';
+            statusText = status;
         }
 
         return `
-            <div class="feedback-list-item ${hasFeedback ? 'completed' : ''} ${selectedFeedbackRecord?.id === record.id ? 'active' : ''}"
+            <div class="feedback-list-item ${isCompleted ? 'completed' : ''} ${selectedFeedbackRecord?.id === record.id ? 'active' : ''}"
                  onclick="selectFeedbackProduct('${record.id}')">
                 <div class="item-header">
                     <span class="item-sku">${escapeHtml(fields['Produktnummer'] || '-')}</span>
                     <span class="item-ampel ${ampelClass}">${ampel}</span>
                 </div>
                 <div class="item-name">${escapeHtml(fields['Produkt'] || '-')}</div>
-                <div class="item-status ${hasFeedback ? 'erledigt' : ''}">${hasFeedback ? '✓ Feedback gesendet' : statusText}</div>
+                <div class="item-status ${isCompleted ? 'erledigt' : ''}">${isCompleted ? '✓ Feedback gesendet' : statusText}</div>
             </div>
         `;
     }).join('');
@@ -732,18 +727,20 @@ function selectFeedbackProduct(recordId) {
     const detailPanel = document.getElementById('feedbackDetailPanel');
 
     // Determine text and compliance info based on type
-    let textContent, complianceStatus, complianceFindings, sectionTitle;
+    let textContent, complianceStatus, complianceFindings, sectionTitle, isCompleted;
 
     if (currentFeedbackType === 'original') {
         textContent = fields['Alter Text'] || 'Kein Originaltext vorhanden.';
         complianceStatus = fields['Original-Compliance-Status'] || 'OK';
         complianceFindings = fields['Original-Compliance-Findings'] || 'Keine Findings vorhanden.';
         sectionTitle = 'Originaltext';
+        isCompleted = complianceStatus === 'Review Original eingereicht';
     } else {
         textContent = fields['Neuer Text'] || 'Kein neuer Text vorhanden.';
         complianceStatus = fields['Ampel'] || 'GRÜN';
         complianceFindings = fields['Compliance-Protokoll'] || 'Kein Protokoll vorhanden.';
         sectionTitle = 'Neuer Text (Webshop)';
+        isCompleted = fields['Status'] === 'Review Webshop eingereicht';
     }
 
     // Map status to CSS class
@@ -753,12 +750,12 @@ function selectFeedbackProduct(recordId) {
 
     // Build detail HTML
     let feedbackSection;
-    if (existingFeedback) {
+    if (isCompleted) {
         feedbackSection = `
             <div class="feedback-already-submitted">
                 <div class="checkmark">✓</div>
                 <div class="message">Feedback wurde bereits gesendet</div>
-                <div class="submitted-text">${sanitizeHtml(existingFeedback)}</div>
+                <div class="submitted-text">${existingFeedback ? sanitizeHtml(existingFeedback) : '<em>Kein Feedback-Text gespeichert</em>'}</div>
             </div>
         `;
     } else {
