@@ -1812,13 +1812,13 @@ body {
 }
 
 .richtext-editor {
-    flex: 1;
     padding: 12px;
     border: 1px solid #ddd;
     border-radius: 0 0 8px 8px;
     font-size: 14px;
     font-family: inherit;
     min-height: 120px;
+    max-height: 250px;
     overflow-y: auto;
     background: white;
     line-height: 1.6;
@@ -1900,4 +1900,6 @@ body {
     color: #333;
     text-align: left;
     white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
 }
