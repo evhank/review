@@ -705,7 +705,7 @@ function selectFeedbackProduct(recordId) {
             </div>
         `;
     } else {
-        const helpTextOriginal = 'Hinweis: Du kommentierst den Originaltext, wie er aktuell wahrscheinlich auf Etiketten oder auf Hirundo.org wiedergegeben wird. Das bedeutet, dass dieser Artikel dort auf Basis dieser Auswertung nicht compliant ist und die Texte überarbeitet werden sollten. Dieser Workflow ist nur zum Festhalten von Feedback für die Ansprechperson.';
+        const helpTextOriginal = 'Hinweis: Du kommentierst den Originaltext, wie er aktuell wahrscheinlich auf Etiketten oder auf der Info-Seite wiedergegeben wird. Das bedeutet, dass dieser Artikel dort auf Basis dieser Auswertung nicht compliant ist und die Texte überarbeitet werden sollten. Dieser Workflow ist nur zum Festhalten von Feedback für die Ansprechperson.';
         const helpTextWebshop = 'Hinweis: Diese Informationen werden an die Textgenerierungs-AI als zusätzliche Anweisung zurückgespielt. Gib möglichst genaue Anweisungen oder zusätzliche Informationen bezüglich der Fehler, die der AI helfen, ein besseres Ergebnis zu generieren.';
         const helpText = currentFeedbackType === 'original' ? helpTextOriginal : helpTextWebshop;
 
