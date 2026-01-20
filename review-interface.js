@@ -508,6 +508,11 @@ async function loadFeedbackData() {
     const listEl = document.getElementById('feedbackList');
     listEl.innerHTML = '<div class="feedback-list-empty">Lade Daten...</div>';
 
+    // Reset selection
+    selectedFeedbackRecord = null;
+    document.getElementById('feedbackDetailPanel').innerHTML =
+        '<div class="feedback-detail-empty"><p>Wähle ein Produkt aus der Liste, um Details anzuzeigen.</p></div>';
+
     try {
         // Load all records with pagination
         feedbackRecords = [];
