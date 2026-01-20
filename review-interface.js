@@ -28,9 +28,9 @@ const FIELDS = {
     // Neue Felder für Original-Compliance
     originalComplianceStatus: 'fldPa5MMvArcEmBrn',
     originalComplianceFindings: 'fldd4r7GTcegj0ntu',
-    // Feedback-Felder (Field IDs nach Erstellung in Airtable eintragen)
-    feedbackOriginaltext: 'PLACEHOLDER_FEEDBACK_ORIGINALTEXT',  // TODO: Field ID eintragen
-    feedbackWebshop: 'PLACEHOLDER_FEEDBACK_WEBSHOP'             // TODO: Field ID eintragen
+    // Feedback-Felder
+    feedbackOriginaltext: 'fldqLqp3salKlj5Mj',
+    feedbackWebshop: 'fldSiF8O9VYjY0r7W'
 };
 
 // ============================================
