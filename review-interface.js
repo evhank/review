@@ -71,6 +71,7 @@ let currentRecord = null;
 let recordQueue = [];
 let currentQueueIndex = 0;
 let currentMode = 'review'; // 'review' or 'browse'
+const defaultMainAppHtml = document.getElementById('mainApp')?.innerHTML || '';
 
 // ============================================
 // INITIALIZATION
@@ -972,6 +973,8 @@ async function submitFeedback() {
 // ============================================
 
 async function displayRecord(record) {
+    ensureMainAppLayout();
+
     currentRecord = record;
     const fields = record.fields;
     
@@ -1748,6 +1751,25 @@ function setDevice(device, btn) {
 
 function showLoading(show) {
     document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+}
+
+function ensureMainAppLayout() {
+    const mainApp = document.getElementById('mainApp');
+    if (!mainApp) return;
+
+    const requiredIds = [
+        'oldTextContent',
+        'oldTextLength',
+        'previewContent',
+        'protocolContent',
+        'commentInput',
+        'reviewerNameDisplay'
+    ];
+
+    const hasReviewLayout = requiredIds.every(id => document.getElementById(id));
+    if (!hasReviewLayout && defaultMainAppHtml) {
+        mainApp.innerHTML = defaultMainAppHtml;
+    }
 }
 
 function showError(message) {
